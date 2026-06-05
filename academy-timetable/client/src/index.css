@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: "Segoe UI", sans-serif;
+}
+
+.branch-batch-header .ag-header-cell-label {
+  white-space: pre-line;
+  line-height: 1.2;
+  text-align: center;
+}
+
+.hide-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}

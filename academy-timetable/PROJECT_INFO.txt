@@ -1,0 +1,83 @@
+Academy Timetable - Project Information
+
+Overview
+- Full-stack timetable management web app for a coaching academy.
+- Frontend: React 18 + Vite + Tailwind + Zustand + TanStack Query + Axios.
+- Backend: Node.js + Express + MongoDB + Mongoose + Puppeteer + Archiver + Zod + Winston.
+
+Core Data Models (Mongoose)
+- Teacher: { name, code }
+- Branch: { name }
+- Batch: { name, branch -> Branch }
+- TimeSlot: { date, startTime, endTime, teacher -> Teacher, batch -> Batch, topic, slotType, notes }
+- ConflictLog: { slot1 -> TimeSlot, slot2 -> TimeSlot, detectedAt }
+- DateRow: { date }
+
+Key Features
+- Master Timetable (table view):
+  - Columns = Branch + Batch.
+  - Rows = Dates (from DateRow collection + dates present in slots).
+  - Each cell can hold multiple slots.
+  - Slot card shows time, topic, and teacher name.
+  - Click cell to add or edit a slot using a modal.
+- Teacher Timetable: filtered view by teacher.
+- Batch Timetable (student view): filtered view by batch.
+- Conflict detection:
+  - Teacher overlap on same date is blocked.
+  - Batch overlap on same date is blocked.
+  - Conflict details are shown inside the slot edit modal.
+- Download exports:
+  - Master timetable DOCX and PDF.
+  - Teacher timetable DOCX and PDF.
+  - Batch timetable DOCX and PDF.
+  - Zip of all teacher and batch PDFs.
+- Manage page:
+  - Delete Teachers, Branches, and Batches.
+  - Slot deletion is only in the master slot modal.
+
+Frontend Pages
+- Master Timetable
+- Teacher View
+- Batch View
+- Manage
+
+Backend API Routes
+- Slots: GET/POST/PUT/DELETE /api/slots
+- Teachers: GET/POST/DELETE /api/teachers
+- Branches: GET/POST/DELETE /api/branches
+- Batches: GET/POST/DELETE /api/batches
+- Dates: GET/POST/DELETE /api/dates
+- Timetable: GET /api/timetable/teacher/:teacherId
+- Timetable: GET /api/timetable/batch/:batchId
+- Conflicts: GET /api/conflicts
+- Export: GET /api/export/teacher/:id/pdf
+- Export: GET /api/export/teacher/:id/docx
+- Export: GET /api/export/batch/:id/pdf
+- Export: GET /api/export/batch/:id/docx
+- Export: GET /api/export/master/pdf
+- Export: GET /api/export/master/docx
+- Export: GET /api/export/all-pdfs
+
+Conflict Rules
+- If a teacher has an overlapping slot on the same date, saving is blocked.
+- If a batch has an overlapping slot on the same date, saving is blocked.
+
+How Date Rows Work
+- Dates are stored in the DateRow collection.
+- The master table includes all DateRow dates, even if no slot exists for that date.
+
+How to Run
+Backend:
+- Create server/.env from .env.example (MONGO_URI, PORT, CLIENT_URL).
+- Install dependencies: npm install (in server folder).
+- Seed data: node seed.js (in server folder).
+- Start server: npm start (in server folder).
+
+Frontend:
+- Install dependencies: npm install (in client folder).
+- Start dev server: npm run dev (in client folder).
+
+Notes
+- Teacher names are stored in lowercase in the database to avoid duplicates.
+- Slot form requires date, start time, end time, teacher, and batch.
+- Archiver is pinned to v5.3.2 for zip export compatibility.
