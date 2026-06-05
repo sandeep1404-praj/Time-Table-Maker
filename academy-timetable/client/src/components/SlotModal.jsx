@@ -1,9 +1,14 @@
 import { useMemo, useState } from "react";
 import { useTeachers, useCreateTeacher } from "../hooks/useTeachers";
 import { useBatches } from "../hooks/useBatches";
+import { useBranches } from "../hooks/useBranches";
 import { useDeleteSlot, useSlots } from "../hooks/useSlots";
 import { useTimetableStore } from "../store/useTimetableStore";
 import { deriveSlotStatus } from "../utils/slotStatus";
+import {
+  sumCompletedChapterHours,
+  getDurationHoursFromTimes
+} from "../utils/chapterProgress";
 import TeacherSearchSelect from "./TeacherSearchSelect";
 
 const SlotModal = ({ initialData, onClose, onSave }) => {
@@ -15,6 +20,7 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
   const conflictMessage = useTimetableStore((state) => state.conflictMessage);
   const clearConflicts = useTimetableStore((state) => state.clearConflicts);
   const { data: batches = [] } = useBatches();
+  const { data: branches = [] } = useBranches();
   const baseForm = useMemo(
     () => ({
       date: initialData?.date || "",
@@ -62,45 +68,52 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
   const selectedTeacher = teachers.find((teacher) => teacher._id === form.teacher);
   const teacherChapters = selectedTeacher?.chapters || [];
 
-  const parseTimeToMinutes = (timeValue) => {
-    if (!timeValue) return 0;
-    const [hours, minutes] = timeValue.split(":").map((value) => Number(value));
-    return hours * 60 + minutes;
-  };
+  const selectedBatch = batches.find((item) => item._id === form.batch);
+  const selectedBranchName = selectedBatch?.branch?.name;
+  const selectedBatchName = selectedBatch?.name;
 
-  const getDurationHours = (startTime, endTime) => {
-    const start = parseTimeToMinutes(startTime);
-    const end = parseTimeToMinutes(endTime);
-    if (!start || !end || end <= start) return 0;
-    return (end - start) / 60;
-  };
-
-  const getBranchIdForBatch = (batchId) => {
-    if (!batchId) return null;
-    const batch = batches.find((item) => item._id === batchId);
-    if (!batch?.branch) return null;
-    return batch.branch._id || batch.branch;
-  };
-
-  const selectedBranchId = getBranchIdForBatch(form.batch);
-  const selectedBranchName = batches.find((item) => item._id === form.batch)?.branch?.name;
+  const autoStatus = useMemo(
+    () =>
+      deriveSlotStatus({
+        date: form.date,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        status: form.isCanceled ? "canceled" : "scheduled"
+      }),
+    [form.date, form.startTime, form.endTime, form.isCanceled]
+  );
 
   const chapterProgressHours = useMemo(() => {
-    if (!form.teacher || !form.subject || !form.chapterNumber || !selectedBranchId) return 0;
-    return allSlots
-      .filter((slot) => {
-        const slotBatchId = slot.batch?._id || slot.batch;
-        const slotBranchId = getBranchIdForBatch(slotBatchId);
-        return (
-          (slot.teacher?._id || slot.teacher) === form.teacher &&
-          slot.subject === form.subject &&
-          slot.chapterNumber === form.chapterNumber &&
-          deriveSlotStatus(slot) === "completed" &&
-          slotBranchId === selectedBranchId
-        );
-      })
-      .reduce((sum, slot) => sum + getDurationHours(slot.startTime, slot.endTime), 0);
-  }, [allSlots, batches, form.teacher, form.subject, form.chapterNumber, form.batch, selectedBranchId]);
+    if (!form.teacher || !form.chapterNumber || !form.batch) return 0;
+
+    let total = sumCompletedChapterHours({
+      slots: allSlots,
+      batches,
+      branches,
+      teacherId: form.teacher,
+      chapterNumber: form.chapterNumber,
+      batchId: form.batch,
+      excludeSlotId: selectedSlotId || null
+    });
+
+    if (form.startTime && form.endTime && !form.isCanceled && autoStatus === "completed") {
+      total += getDurationHoursFromTimes(form.startTime, form.endTime);
+    }
+
+    return total;
+  }, [
+    allSlots,
+    batches,
+    branches,
+    form.teacher,
+    form.chapterNumber,
+    form.batch,
+    form.startTime,
+    form.endTime,
+    form.isCanceled,
+    autoStatus,
+    selectedSlotId
+  ]);
 
   const plannedHours = teacherChapters.find(
     (chapter) => String(chapter.chapterNumber || "") === String(form.chapterNumber || "")
@@ -127,17 +140,6 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       hydrateFromSlot(slot);
     }
   };
-
-  const autoStatus = useMemo(
-    () =>
-      deriveSlotStatus({
-        date: form.date,
-        startTime: form.startTime,
-        endTime: form.endTime,
-        status: form.isCanceled ? "canceled" : "scheduled"
-      }),
-    [form.date, form.startTime, form.endTime, form.isCanceled]
-  );
 
   const handleSubmit = (event) => {
     event.preventDefault();
@@ -412,17 +414,20 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
             {form.batch ? (
               <>
                 Chapter progress
-                {selectedBranchName ? ` (${selectedBranchName} branch)` : ""}:{" "}
-                {chapterProgressHours.toFixed(1)} hrs
+                {selectedBranchName && selectedBatchName
+                  ? ` (${selectedBranchName} · ${selectedBatchName})`
+                  : ""}
+                : {chapterProgressHours.toFixed(1)} hrs
                 {Number.isFinite(plannedHours) && plannedHours > 0
                   ? ` / ${plannedHours} hrs planned`
                   : ""}
                 <span className="block text-[11px] text-slate-400">
-                  Counts completed slots for this chapter across batches in the same branch only.
+                  Sums all completed lectures for this teacher, chapter, and batch — including
+                  multiple slots on the same day.
                 </span>
               </>
             ) : (
-              "Select a batch to see chapter progress for that branch."
+              "Select a batch to see chapter progress for that batch."
             )}
           </div>
           <label className="text-sm md:col-span-2">

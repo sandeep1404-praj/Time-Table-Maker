@@ -1,10 +1,4 @@
-const parseSlotDateTime = (date, timeStr) => {
-  const dateStr =
-    typeof date === "string"
-      ? date.slice(0, 10)
-      : new Date(date).toISOString().slice(0, 10);
-  return new Date(`${dateStr}T${timeStr}`);
-};
+import { parseSlotDateTime, getSlotEndDateTime } from "./time";
 
 export const deriveSlotStatus = (slot, now = new Date()) => {
   if (slot.status === "canceled") {
@@ -16,7 +10,11 @@ export const deriveSlotStatus = (slot, now = new Date()) => {
   }
 
   const start = parseSlotDateTime(slot.date, slot.startTime);
-  const end = parseSlotDateTime(slot.date, slot.endTime);
+  const end = getSlotEndDateTime(slot);
+
+  if (!end) {
+    return slot.status || "scheduled";
+  }
 
   if (now < start) {
     return "scheduled";

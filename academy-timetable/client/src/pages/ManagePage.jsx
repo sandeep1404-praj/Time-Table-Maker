@@ -7,10 +7,12 @@ import {
   useAddTeacherChapter,
   useUpdateTeacher,
   useUpdateTeacherChapter,
-  useDeleteTeacherChapter
+  useDeleteTeacherChapter,
+  useUpdateChapterBranchCompletion
 } from "../hooks/useTeachers";
 import { useEffect, useState } from "react";
 import TeacherSearchSelect from "../components/TeacherSearchSelect";
+import ChapterCompletionModal from "../components/ChapterCompletionModal";
 
 const ManagePage = () => {
   const { data: branches = [] } = useBranches();
@@ -21,6 +23,7 @@ const ManagePage = () => {
   const addTeacherChapter = useAddTeacherChapter();
   const updateTeacherChapter = useUpdateTeacherChapter();
   const deleteTeacherChapter = useDeleteTeacherChapter();
+  const updateBranchCompletion = useUpdateChapterBranchCompletion();
   const deleteBranch = useDeleteBranch();
   const deleteBatch = useDeleteBatch();
   const deleteTeacher = useDeleteTeacher();
@@ -39,6 +42,7 @@ const ManagePage = () => {
   const [editingChapterId, setEditingChapterId] = useState("");
   const [editChapterNumber, setEditChapterNumber] = useState("");
   const [editChapterTitle, setEditChapterTitle] = useState("");
+  const [completionChapter, setCompletionChapter] = useState(null);
 
   const handleCreateTeacher = async () => {
     const name = newTeacherName.trim();
@@ -143,6 +147,17 @@ const ManagePage = () => {
       chapterId: editingChapterId
     });
     setEditingChapterId("");
+  };
+
+  const handleToggleCompletion = async ({ branchId, batchId, isCompleted }) => {
+    if (!selectedTeacherId || !completionChapter?._id) return;
+    await updateBranchCompletion.mutateAsync({
+      teacherId: selectedTeacherId,
+      chapterId: completionChapter._id,
+      branchId,
+      batchId,
+      isCompleted
+    });
   };
 
   const handleAddChapter = async () => {
@@ -336,17 +351,31 @@ const ManagePage = () => {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-sm text-slate-700">
-                        {chapter.chapterNumber} {chapter.title} ({chapter.plannedHours} hrs)
-                      </span>
+                      <div>
+                        <span className="text-sm font-medium text-slate-800">
+                          Ch. {chapter.chapterNumber} — {chapter.title || "Untitled"}
+                        </span>
+                        <span className="ml-2 text-xs text-slate-500">
+                          {chapter.plannedHours} hrs planned
+                        </span>
+                      </div>
                       {chapter._id && (
-                        <button
-                          type="button"
-                          onClick={() => startEditChapter(chapter)}
-                          className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600"
-                        >
-                          Edit
-                        </button>
+                        <div className="flex shrink-0 gap-2">
+                          <button
+                            type="button"
+                            onClick={() => startEditChapter(chapter)}
+                            className="rounded border border-slate-200 px-2 py-1 text-xs text-slate-600 hover:bg-slate-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setCompletionChapter(chapter)}
+                            className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-xs font-medium text-emerald-700 hover:bg-emerald-100"
+                          >
+                            Mark Complete
+                          </button>
+                        </div>
                       )}
                     </div>
                   )}
@@ -424,6 +453,19 @@ const ManagePage = () => {
           </div>
         </div>
       </div>
+
+      {completionChapter && (
+        <ChapterCompletionModal
+          chapter={
+            selectedTeacher?.chapters?.find((item) => item._id === completionChapter._id) ||
+            completionChapter
+          }
+          branches={branches}
+          onClose={() => setCompletionChapter(null)}
+          onToggle={handleToggleCompletion}
+          isPending={updateBranchCompletion.isPending}
+        />
+      )}
     </div>
   );
 };

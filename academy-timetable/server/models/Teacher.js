@@ -9,7 +9,22 @@ const TeacherSchema = new mongoose.Schema(
       {
         chapterNumber: { type: String, default: "" },
         title: { type: String, default: "" },
-        plannedHours: { type: Number, default: 0 }
+        plannedHours: { type: Number, default: 0 },
+        branchCompletions: [
+          {
+            branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+            isCompleted: { type: Boolean, default: false },
+            completedAt: { type: Date, default: null }
+          }
+        ],
+        batchCompletions: [
+          {
+            branch: { type: mongoose.Schema.Types.ObjectId, ref: "Branch" },
+            batch: { type: mongoose.Schema.Types.ObjectId, ref: "Batch" },
+            isCompleted: { type: Boolean, default: false },
+            completedAt: { type: Date, default: null }
+          }
+        ]
       }
     ],
     color: { type: String, default: "" },

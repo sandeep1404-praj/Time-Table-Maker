@@ -106,6 +106,65 @@ router.patch("/:id", async (req, res) => {
   res.json(teacher);
 });
 
+router.patch("/:id/chapters/:chapterId/branch-completion", async (req, res) => {
+  const { branchId, batchId, isCompleted } = req.body;
+  if (!branchId) {
+    return res.status(400).json({ error: "Branch is required" });
+  }
+
+  const teacher = await Teacher.findById(req.params.id);
+  if (!teacher) {
+    return res.status(404).json({ error: "Teacher not found" });
+  }
+
+  const chapter = teacher.chapters.id(req.params.chapterId);
+  if (!chapter) {
+    return res.status(404).json({ error: "Chapter not found" });
+  }
+
+  const branchIdStr = String(branchId);
+
+  if (batchId) {
+    const batchIdStr = String(batchId);
+    let entry = chapter.batchCompletions?.find(
+      (item) =>
+        String(item.branch) === branchIdStr && String(item.batch) === batchIdStr
+    );
+
+    if (!entry) {
+      chapter.batchCompletions = chapter.batchCompletions || [];
+      chapter.batchCompletions.push({
+        branch: branchId,
+        batch: batchId,
+        isCompleted: Boolean(isCompleted),
+        completedAt: isCompleted ? new Date() : null
+      });
+    } else {
+      entry.isCompleted = Boolean(isCompleted);
+      entry.completedAt = isCompleted ? new Date() : null;
+    }
+  } else {
+    let entry = chapter.branchCompletions?.find(
+      (item) => String(item.branch) === branchIdStr
+    );
+
+    if (!entry) {
+      chapter.branchCompletions = chapter.branchCompletions || [];
+      chapter.branchCompletions.push({
+        branch: branchId,
+        isCompleted: Boolean(isCompleted),
+        completedAt: isCompleted ? new Date() : null
+      });
+    } else {
+      entry.isCompleted = Boolean(isCompleted);
+      entry.completedAt = isCompleted ? new Date() : null;
+    }
+  }
+
+  await teacher.save();
+  res.json(teacher);
+});
+
 router.patch("/:id/chapters/:chapterId", async (req, res) => {
   const { chapterNumber, title, plannedHours } = req.body;
   const teacher = await Teacher.findById(req.params.id);
