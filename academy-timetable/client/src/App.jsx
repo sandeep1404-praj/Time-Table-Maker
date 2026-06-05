@@ -5,12 +5,14 @@ import BatchPage from "./pages/BatchPage";
 import ManagePage from "./pages/ManagePage";
 import HistoryPage from "./pages/HistoryPage";
 import ChapterTrackingPage from "./pages/ChapterTrackingPage";
+import TestTrackingPage from "./pages/TestTrackingPage";
 
 const tabs = [
   { key: "master", label: "Master Timetable" },
   { key: "teacher", label: "Teacher View" },
   { key: "batch", label: "Batch View" },
   { key: "tracking", label: "Chapter Progress" },
+  { key: "tests", label: "Test Tracking" },
   { key: "history", label: "History" },
   { key: "manage", label: "Manage" }
 ];
@@ -48,6 +50,7 @@ const App = () => {
         {activeTab === "teacher" && <TeacherPage />}
         {activeTab === "batch" && <BatchPage />}
         {activeTab === "tracking" && <ChapterTrackingPage />}
+        {activeTab === "tests" && <TestTrackingPage />}
         {activeTab === "history" && <HistoryPage />}
         {activeTab === "manage" && <ManagePage />}
       </main>

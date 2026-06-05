@@ -85,6 +85,23 @@ export const useUpdateTeacherChapter = () => {
   });
 };
 
+export const useUpdateChapterBranchCompletion = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ teacherId, chapterId, branchId, batchId, isCompleted }) => {
+      const { data } = await api.patch(
+        `/api/teachers/${teacherId}/chapters/${chapterId}/branch-completion`,
+        { branchId, batchId, isCompleted }
+      );
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+    }
+  });
+};
+
 export const useDeleteTeacherChapter = () => {
   const queryClient = useQueryClient();
 

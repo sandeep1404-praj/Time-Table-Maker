@@ -1,18 +1,20 @@
-const parseSlotDateTime = (date, timeStr) => {
-  const dateStr =
-    typeof date === "string"
-      ? date.slice(0, 10)
-      : date.toISOString().slice(0, 10);
-  return new Date(`${dateStr}T${timeStr}`);
-};
+const { parseSlotDateTime, getSlotEndDateTime } = require("../utils/time");
 
 const deriveSlotStatus = (slot, now = new Date()) => {
   if (slot.status === "canceled") {
     return "canceled";
   }
 
+  if (!slot.date || !slot.startTime || !slot.endTime) {
+    return slot.status || "scheduled";
+  }
+
   const start = parseSlotDateTime(slot.date, slot.startTime);
-  const end = parseSlotDateTime(slot.date, slot.endTime);
+  const end = getSlotEndDateTime(slot);
+
+  if (!end) {
+    return slot.status || "scheduled";
+  }
 
   if (now < start) {
     return "scheduled";

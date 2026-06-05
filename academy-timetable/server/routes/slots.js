@@ -43,7 +43,8 @@ router.get("/", async (req, res) => {
     query.isArchived = { $ne: true };
   }
   const slots = await TimeSlot.find(query)
-    .populate("teacher batch")
+    .populate("teacher")
+    .populate({ path: "batch", populate: { path: "branch" } })
     .sort({ date: 1, startTime: 1 });
 
   if (!req.query.archiveId) {
