@@ -24,7 +24,30 @@ const archivesRouter = require("./routes/archives");
 dotenv.config();
 
 const app = express();
-app.use(cors({ origin: process.env.CLIENT_URL || "*" }));
+
+const allowedOrigins = [
+  process.env.CLIENT_URL,
+  "https://time-table-guru.netlify.app",
+  "http://localhost:5173",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin) {
+        return callback(null, true);
+      }
+
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error(`CORS blocked origin: ${origin}`));
+    },
+    credentials: true,
+  })
+);
+
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -42,6 +65,7 @@ app.use("/api/export", exportRouter);
 app.use("/api/archives", archivesRouter);
 
 const port = process.env.PORT || 4000;
+
 connectDb()
   .then(() => {
     app.listen(port, () => {
