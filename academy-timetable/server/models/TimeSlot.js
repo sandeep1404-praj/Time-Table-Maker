@@ -5,7 +5,7 @@ const TimeSlotSchema = new mongoose.Schema(
     date: { type: Date, required: true },
     startTime: { type: String, required: true },
     endTime: { type: String, required: true },
-    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", required: true },
+    teacher: { type: mongoose.Schema.Types.ObjectId, ref: "Teacher", default: null },
     batch: { type: mongoose.Schema.Types.ObjectId, ref: "Batch", required: true },
     topic: { type: String, default: "" },
     subject: { type: String, default: "" },

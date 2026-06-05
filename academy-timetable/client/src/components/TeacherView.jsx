@@ -3,6 +3,7 @@ import { useTeachers } from "../hooks/useTeachers";
 import { useTeacherTimetable } from "../hooks/useTimetable";
 import TeacherSearchSelect from "./TeacherSearchSelect";
 import api from "../api/client";
+import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
 
 const TeacherView = () => {
   const { data: teachers = [] } = useTeachers();
@@ -43,64 +44,78 @@ const TeacherView = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div className="min-w-[240px] max-w-sm flex-1">
-          <p className="mb-1 text-sm font-medium">Teacher</p>
-          <TeacherSearchSelect
-            teachers={teachers}
-            value={selectedTeacherId}
-            onChange={setSelectedTeacherId}
-            placeholder="Search teacher..."
-            emptyLabel="Select teacher"
-            compact
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={downloadDocx}
-            disabled={!selectedTeacherId}
-            className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
-          >
-            Download (Word)
-          </button>
-          <button
-            type="button"
-            onClick={downloadPdf}
-            disabled={!selectedTeacherId}
-            className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
-          >
-            Download (PDF)
-          </button>
+    <div className="space-y-5">
+      <div className="panel">
+        <div className="panel-body">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-[240px] max-w-sm flex-1">
+              <label className="form-label">Teacher</label>
+              <TeacherSearchSelect
+                teachers={teachers}
+                value={selectedTeacherId}
+                onChange={setSelectedTeacherId}
+                placeholder="Search teacher..."
+                emptyLabel="Select teacher"
+                compact
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={downloadDocx}
+                disabled={!selectedTeacherId}
+                className="btn-secondary"
+              >
+                Download (Word)
+              </button>
+              <button
+                type="button"
+                onClick={downloadPdf}
+                disabled={!selectedTeacherId}
+                className="btn-secondary"
+              >
+                Download (PDF)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <table className="w-full border-collapse text-sm">
-        <thead className="bg-slate-100">
-          <tr>
-            <th className="border px-2 py-2">Date</th>
-            <th className="border px-2 py-2">Day</th>
-            <th className="border px-2 py-2">Branch</th>
-            <th className="border px-2 py-2">Time</th>
-            <th className="border px-2 py-2">Topic</th>
-          </tr>
-        </thead>
-        <tbody>
-          {slots.map((slot) => (
-            <tr key={slot._id}>
-              <td className="border px-2 py-2">{slot.date.slice(0, 10)}</td>
-              <td className="border px-2 py-2">
-                {new Date(slot.date).toLocaleDateString("en-IN", { weekday: "short" })}
-              </td>
-              <td className="border px-2 py-2">{slot.batch?.branch?.name}</td>
-              <td className="border px-2 py-2">
-                {slot.startTime}-{slot.endTime}
-              </td>
-              <td className="border px-2 py-2">{slot.topic}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {slots.length === 0 ? (
+        <div className="empty-state">
+          <p className="font-semibold text-slate-700">No schedule to display</p>
+          <p className="mt-1 text-sm text-slate-500">Select a teacher to view their timetable.</p>
+        </div>
+      ) : (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day</th>
+                <th>Branch</th>
+                <th>Time</th>
+                <th>Topic</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slots.map((slot) => (
+                <tr key={slot._id}>
+                  <td className="font-medium">{formatDisplayDate(slot.date)}</td>
+                  <td>
+                    <span className="day-badge">{getWeekdayName(slot.date)}</span>
+                  </td>
+                  <td>{slot.batch?.branch?.name}</td>
+                  <td className="text-xs font-semibold text-slate-800">
+                    {slot.startTime} – {slot.endTime}
+                  </td>
+                  <td className="text-xs font-medium">{slot.topic}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };

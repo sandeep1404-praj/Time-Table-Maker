@@ -174,29 +174,25 @@ const ManagePage = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold">Add Teacher</h2>
+    <div className="space-y-5">
+      <div className="manage-card">
+        <div className="mb-5">
+          <h2 className="text-lg font-bold text-slate-900">Add Teacher</h2>
           <p className="text-xs text-slate-500">Subject auto-fills in slot form.</p>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <input
               value={newTeacherName}
               onChange={(e) => setNewTeacherName(e.target.value)}
               placeholder="Teacher name"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
             <input
               value={newTeacherSubject}
               onChange={(e) => setNewTeacherSubject(e.target.value)}
               placeholder="Subject"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
-            <button
-              type="button"
-              onClick={handleCreateTeacher}
-              className="rounded bg-slate-900 px-3 text-sm text-white"
-            >
+            <button type="button" onClick={handleCreateTeacher} className="btn-primary">
               Add Teacher
             </button>
           </div>
@@ -213,8 +209,8 @@ const ManagePage = () => {
             <p className="mt-2 text-sm text-amber-700">{createTeacherWarning}</p>
           )}
         </div>
-        <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-sm font-semibold">Edit Teacher &amp; Chapters</h3>
+        <div className="manage-subcard mb-5">
+          <h3 className="font-semibold text-slate-800">Edit Teacher &amp; Chapters</h3>
           <div className="mt-3 grid gap-3 md:grid-cols-3">
             <TeacherSearchSelect
               teachers={teachers}
@@ -228,7 +224,7 @@ const ManagePage = () => {
               value={selectedTeacher?.subject || ""}
               placeholder="Subject"
               disabled
-              className="rounded border border-slate-300 bg-slate-100 p-2 text-sm"
+              className="form-input bg-slate-100"
             />
           </div>
           {selectedTeacherId && (
@@ -238,19 +234,19 @@ const ManagePage = () => {
                   value={editTeacherName}
                   onChange={(e) => setEditTeacherName(e.target.value)}
                   placeholder="Teacher name"
-                  className="rounded border border-slate-300 p-2 text-sm"
+                  className="form-input"
                 />
                 <input
                   value={editTeacherSubject}
                   onChange={(e) => setEditTeacherSubject(e.target.value)}
                   placeholder="Subject"
-                  className="rounded border border-slate-300 p-2 text-sm"
+                  className="form-input"
                 />
                 <button
                   type="button"
                   onClick={handleUpdateTeacher}
                   disabled={updateTeacher.isPending}
-                  className="rounded border border-slate-200 bg-white px-3 text-sm text-slate-700 disabled:opacity-50"
+                  className="btn-secondary disabled:opacity-50"
                 >
                   {updateTeacher.isPending ? "Saving..." : "Save Teacher"}
                 </button>
@@ -275,13 +271,13 @@ const ManagePage = () => {
               value={chapterNumber}
               onChange={(e) => setChapterNumber(e.target.value)}
               placeholder="Chapter no."
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
             <input
               value={chapterTitle}
               onChange={(e) => setChapterTitle(e.target.value)}
               placeholder="Chapter title"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
             <input
               value={chapterHours}
@@ -289,13 +285,9 @@ const ManagePage = () => {
               placeholder="Planned hours"
               type="number"
               min="0"
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
-            <button
-              type="button"
-              onClick={handleAddChapter}
-              className="rounded border border-slate-200 bg-white px-3 text-sm text-slate-700"
-            >
+            <button type="button" onClick={handleAddChapter} className="btn-secondary">
               Add Chapter
             </button>
           </div>

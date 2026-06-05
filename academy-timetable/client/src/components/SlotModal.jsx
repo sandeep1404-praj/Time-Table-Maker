@@ -9,6 +9,7 @@ import {
   sumCompletedChapterHours,
   getDurationHoursFromTimes
 } from "../utils/chapterProgress";
+import { getAllChapterOptions } from "../utils/testProgress";
 import TeacherSearchSelect from "./TeacherSearchSelect";
 
 const SlotModal = ({ initialData, onClose, onSave }) => {
@@ -67,6 +68,9 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
 
   const selectedTeacher = teachers.find((teacher) => teacher._id === form.teacher);
   const teacherChapters = selectedTeacher?.chapters || [];
+  const isTestSlot = form.slotType === "test";
+  const allChapterOptions = useMemo(() => getAllChapterOptions(teachers), [teachers]);
+  const chapterOptions = isTestSlot ? allChapterOptions : teacherChapters;
 
   const selectedBatch = batches.find((item) => item._id === form.batch);
   const selectedBranchName = selectedBatch?.branch?.name;
@@ -129,6 +133,27 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
     }));
   };
 
+  const handleChapterChange = (value) => {
+    if (isTestSlot) {
+      const option = allChapterOptions.find((item) => item.chapterNumber === value);
+      setForm((prev) => ({
+        ...prev,
+        chapterNumber: value,
+        subject: option?.subject || prev.subject
+      }));
+      return;
+    }
+    updateField("chapterNumber", value);
+  };
+
+  const handleSlotTypeChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      slotType: value,
+      ...(value === "test" ? { teacher: "" } : {})
+    }));
+  };
+
   const handleSlotSelect = (value) => {
     setSelectedSlotId(value);
     if (!value) {
@@ -143,8 +168,16 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!form.date || !form.startTime || !form.endTime || !form.teacher || !form.batch) {
-      setSlotError("Please fill date, time, teacher, and batch before saving.");
+    if (!form.date || !form.startTime || !form.endTime || !form.batch) {
+      setSlotError("Please fill date, time, and batch before saving.");
+      return;
+    }
+    if (!isTestSlot && !form.teacher) {
+      setSlotError("Teacher is required for non-test slots.");
+      return;
+    }
+    if (isTestSlot && (!form.chapterNumber || !form.subject)) {
+      setSlotError("Subject and chapter are required for test slots.");
       return;
     }
     if (form.isCanceled && !form.cancelNote.trim()) {
@@ -152,10 +185,11 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       return;
     }
     setSlotError("");
-    const { isCanceled, ...rest } = form;
+    const { isCanceled, teacher, ...rest } = form;
     onSave(
       {
         ...rest,
+        teacher: isTestSlot ? null : teacher,
         status: isCanceled ? "canceled" : autoStatus
       },
       selectedSlotId || null
@@ -194,31 +228,24 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-20 flex items-center justify-center bg-black/30 p-4">
-      <form
-        className="w-full max-w-xl rounded-lg bg-white p-6 shadow-lg"
-        onSubmit={handleSubmit}
-      >
-        <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Edit Slot</h3>
+    <div className="modal-overlay">
+      <form className="modal-panel" onSubmit={handleSubmit}>
+        <div className="mb-5 flex items-center justify-between">
+          <h3 className="modal-title">Edit Slot</h3>
           <button
             type="button"
             onClick={() => {
               clearConflicts();
               onClose();
             }}
-            className="text-sm text-slate-500"
+            className="btn-secondary px-2.5 py-1.5 text-xs"
           >
             Close
           </button>
         </div>
-        {slotError && (
-          <div className="mb-4 rounded border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
-            {slotError}
-          </div>
-        )}
+        {slotError && <div className="alert-warning mb-4">{slotError}</div>}
         {(conflictMessage || conflicts.length > 0) && (
-          <div className="mb-4 rounded border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+          <div className="alert-error mb-4">
             <p className="font-semibold">
               {conflictMessage || "Conflict detected: overlapping slot."}
             </p>
@@ -238,12 +265,12 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
         )}
         <div className="grid gap-3 md:grid-cols-2">
           {existingSlots.length > 0 && (
-            <label className="text-sm md:col-span-2">
-              Edit Existing Slot
+            <label className="md:col-span-2">
+              <span className="form-label">Edit Existing Slot</span>
               <select
                 value={selectedSlotId}
                 onChange={(e) => handleSlotSelect(e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 p-2"
+                className="form-select"
               >
                 <option value="">Create new slot</option>
                 {existingSlots.map((slot) => (
@@ -254,52 +281,62 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
               </select>
             </label>
           )}
-          <label className="text-sm">
-            Date
+          <label>
+            <span className="form-label">Date</span>
             <input
               type="date"
               value={form.date}
               onChange={(e) => updateField("date", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
             />
           </label>
-          <div className="text-sm">
-            Teacher
-            <TeacherSearchSelect
-              teachers={teachers}
-              value={form.teacher}
-              onChange={handleTeacherChange}
-              placeholder="Search teacher..."
-              emptyLabel="Select"
-              compact
-              allowEmpty
-              className="mt-1"
-            />
-            {selectedTeacher?.allowScheduleOverlap && (
-              <p className="mt-1 text-xs text-slate-500">
-                This teacher can have overlapping time slots; batch conflicts still apply.
-              </p>
-            )}
-          </div>
-          <label className="text-sm">
-            Subject
+          {!isTestSlot && (
+            <div>
+              <span className="form-label">Teacher</span>
+              <TeacherSearchSelect
+                teachers={teachers}
+                value={form.teacher}
+                onChange={handleTeacherChange}
+                placeholder="Search teacher..."
+                emptyLabel="Select"
+                compact
+                allowEmpty
+                className="mt-1"
+              />
+              {selectedTeacher?.allowScheduleOverlap && (
+                <p className="mt-1 text-xs text-slate-500">
+                  This teacher can have overlapping time slots; batch conflicts still apply.
+                </p>
+              )}
+            </div>
+          )}
+          <label>
+            <span className="form-label">Subject</span>
             <input
               type="text"
               value={form.subject}
               onChange={(e) => updateField("subject", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
             />
           </label>
-          <label className="text-sm">
-            Chapter
+          <label>
+            <span className="form-label">Chapter</span>
             <select
               value={form.chapterNumber}
-              onChange={(e) => updateField("chapterNumber", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              onChange={(e) => handleChapterChange(e.target.value)}
+              className="form-select"
             >
               <option value="">Select</option>
-              {teacherChapters.map((chapter) => (
-                <option key={chapter.chapterNumber} value={chapter.chapterNumber}>
+              {chapterOptions.map((chapter) => (
+                <option
+                  key={
+                    isTestSlot
+                      ? `${chapter.subject}-${chapter.chapterNumber}`
+                      : chapter.chapterNumber
+                  }
+                  value={chapter.chapterNumber}
+                >
+                  {isTestSlot && chapter.subject ? `${chapter.subject} · ` : ""}
                   {chapter.chapterNumber} {chapter.title}
                 </option>
               ))}
@@ -325,12 +362,12 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
             </div>
             {teacherError && <p className="mt-1 text-xs text-red-600">{teacherError}</p>}
           </div> */}
-          <label className="text-sm">
-            Batch
+          <label>
+            <span className="form-label">Batch</span>
             <select
               value={form.batch}
               onChange={(e) => updateField("batch", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-select"
             >
               <option value="">Select</option>
               {batches.map((batch) => (
@@ -340,39 +377,39 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
               ))}
             </select>
           </label>
-          <label className="text-sm">
-            Start Time
+          <label>
+            <span className="form-label">Start Time</span>
             <input
               type="time"
               value={form.startTime}
               onChange={(e) => updateField("startTime", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
             />
           </label>
-          <label className="text-sm">
-            End Time
+          <label>
+            <span className="form-label">End Time</span>
             <input
               type="time"
               value={form.endTime}
               onChange={(e) => updateField("endTime", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
             />
           </label>
-          <label className="text-sm">
-            Topic
+          <label>
+            <span className="form-label">Topic</span>
             <input
               type="text"
               value={form.topic}
               onChange={(e) => updateField("topic", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
             />
           </label>
-          <label className="text-sm">
-            Type
+          <label>
+            <span className="form-label">Type</span>
             <select
               value={form.slotType}
-              onChange={(e) => updateField("slotType", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              onChange={(e) => handleSlotTypeChange(e.target.value)}
+              className="form-select"
             >
               <option value="lecture">Lecture</option>
               <option value="test">Test</option>
@@ -381,9 +418,9 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
               <option value="coverup">Coverup (Legacy)</option>
             </select>
           </label>
-          <div className="text-sm">
-            <p className="mb-1 font-medium">Status</p>
-            <p className="rounded border border-slate-200 bg-slate-50 px-2 py-2 capitalize text-slate-700">
+          <div>
+            <p className="form-label">Status</p>
+            <p className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2.5 capitalize text-slate-700">
               {autoStatus}
             </p>
             <p className="mt-1 text-xs text-slate-500">
@@ -400,60 +437,63 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
             Mark as canceled
           </label>
           {form.isCanceled && (
-            <label className="text-sm md:col-span-2">
-              Cancel Note
+            <label className="md:col-span-2">
+              <span className="form-label">Cancel Note</span>
               <textarea
                 value={form.cancelNote}
                 onChange={(e) => updateField("cancelNote", e.target.value)}
-                className="mt-1 w-full rounded border border-slate-300 p-2"
+                className="form-input"
                 rows={2}
               />
             </label>
           )}
-          <div className="text-xs text-slate-500 md:col-span-2">
-            {form.batch ? (
-              <>
-                Chapter progress
-                {selectedBranchName && selectedBatchName
-                  ? ` (${selectedBranchName} · ${selectedBatchName})`
-                  : ""}
-                : {chapterProgressHours.toFixed(1)} hrs
-                {Number.isFinite(plannedHours) && plannedHours > 0
-                  ? ` / ${plannedHours} hrs planned`
-                  : ""}
-                <span className="block text-[11px] text-slate-400">
-                  Sums all completed lectures for this teacher, chapter, and batch — including
-                  multiple slots on the same day.
-                </span>
-              </>
-            ) : (
-              "Select a batch to see chapter progress for that batch."
-            )}
-          </div>
-          <label className="text-sm md:col-span-2">
-            Notes
+          {!isTestSlot && (
+            <div className="text-xs text-slate-500 md:col-span-2">
+              {form.batch ? (
+                <>
+                  Chapter progress
+                  {selectedBranchName && selectedBatchName
+                    ? ` (${selectedBranchName} · ${selectedBatchName})`
+                    : ""}
+                  : {chapterProgressHours.toFixed(1)} hrs
+                  {Number.isFinite(plannedHours) && plannedHours > 0
+                    ? ` / ${plannedHours} hrs planned`
+                    : ""}
+                  <span className="block text-[11px] text-slate-400">
+                    Sums all completed lectures for this teacher, chapter, and batch — including
+                    multiple slots on the same day.
+                  </span>
+                </>
+              ) : (
+                "Select a batch to see chapter progress for that batch."
+              )}
+            </div>
+          )}
+          {isTestSlot && (
+            <p className="text-xs text-slate-500 md:col-span-2">
+              Test slots do not require a teacher. They are tracked by subject, chapter, and batch.
+            </p>
+          )}
+          <label className="md:col-span-2">
+            <span className="form-label">Notes</span>
             <textarea
               value={form.notes}
               onChange={(e) => updateField("notes", e.target.value)}
-              className="mt-1 w-full rounded border border-slate-300 p-2"
+              className="form-input"
               rows={3}
             />
           </label>
         </div>
-        <div className="mt-4 flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded border px-3 py-2">
+        <div className="mt-5 flex justify-end gap-2">
+          <button type="button" onClick={onClose} className="btn-secondary">
             Cancel
           </button>
           {selectedSlotId && (
-            <button
-              type="button"
-              onClick={handleDeleteSlot}
-              className="rounded border border-red-200 bg-red-50 px-3 py-2 text-red-600"
-            >
+            <button type="button" onClick={handleDeleteSlot} className="btn-danger-outline">
               Delete Slot
             </button>
           )}
-          <button type="submit" className="rounded bg-slate-900 px-3 py-2 text-white">
+          <button type="submit" className="btn-primary">
             Save Slot
           </button>
         </div>

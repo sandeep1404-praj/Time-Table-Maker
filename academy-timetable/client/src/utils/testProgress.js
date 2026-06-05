@@ -1,22 +1,66 @@
 import { deriveSlotStatus } from "./slotStatus";
 import { resolveSlotBatchContext } from "./chapterProgress";
 
-const buildTestKey = (teacherId, chapterNumber, branchId, batchId, viewMode) =>
+const buildTestKey = (chapterNumber, branchId, batchId, subject, viewMode) =>
   viewMode === "batch" && batchId
-    ? `${teacherId}|${chapterNumber}|${branchId}|${batchId}`
-    : `${teacherId}|${chapterNumber}|${branchId}`;
+    ? `${subject}|${chapterNumber}|${branchId}|${batchId}`
+    : `${subject}|${chapterNumber}|${branchId}`;
 
-const getChapterFromTeacher = (teacher, chapterNumber) =>
-  teacher?.chapters?.find((item) => String(item.chapterNumber) === String(chapterNumber));
+export const getAllChapterOptions = (teachers = []) => {
+  const map = new Map();
+  teachers.forEach((teacher) => {
+    (teacher.chapters || []).forEach((chapter) => {
+      const subject = teacher.subject || "";
+      const key = `${subject}|${chapter.chapterNumber}`;
+      if (!map.has(key)) {
+        map.set(key, {
+          chapterNumber: chapter.chapterNumber,
+          title: chapter.title || "",
+          subject
+        });
+      }
+    });
+  });
+  return Array.from(map.values()).sort(
+    (a, b) =>
+      a.subject.localeCompare(b.subject) ||
+      String(a.chapterNumber).localeCompare(String(b.chapterNumber), undefined, {
+        numeric: true
+      })
+  );
+};
+
+export const findChapterTitle = (teachers, chapterNumber, subject = "") => {
+  const normalizedSubject = String(subject).trim().toLowerCase();
+  for (const teacher of teachers) {
+    if (normalizedSubject && String(teacher.subject || "").toLowerCase() !== normalizedSubject) {
+      continue;
+    }
+    const chapter = teacher.chapters?.find(
+      (item) => String(item.chapterNumber) === String(chapterNumber)
+    );
+    if (chapter?.title) return chapter.title;
+  }
+  return "";
+};
 
 const isTestSlot = (slot) => slot.slotType === "test";
 
-export const isTestTaken = (testSlots, { teacherId, chapterNumber, branchId, batchId, viewMode, batches }) => {
-  return testSlots.some((slot) => {
+const subjectsMatch = (a, b) => {
+  const left = String(a || "").trim().toLowerCase();
+  const right = String(b || "").trim().toLowerCase();
+  if (!left || !right) return true;
+  return left === right;
+};
+
+export const isTestTaken = (
+  testSlots,
+  { chapterNumber, branchId, batchId, viewMode, subject, batches }
+) =>
+  testSlots.some((slot) => {
     if (!isTestSlot(slot) || deriveSlotStatus(slot) !== "completed") return false;
-    const slotTeacherId = slot.teacher?._id || slot.teacher;
-    if (String(slotTeacherId) !== String(teacherId)) return false;
     if (String(slot.chapterNumber || "") !== String(chapterNumber || "")) return false;
+    if (!subjectsMatch(slot.subject, subject)) return false;
 
     const slotBatchId = slot.batch?._id || slot.batch;
     if (viewMode === "batch" && batchId) {
@@ -27,7 +71,6 @@ export const isTestTaken = (testSlots, { teacherId, chapterNumber, branchId, bat
     const slotBranchId = batch?.branch?._id || batch?.branch;
     return String(slotBranchId) === String(branchId);
   });
-};
 
 export const analyzeTestProgress = ({
   slots = [],
@@ -43,21 +86,19 @@ export const analyzeTestProgress = ({
   );
 
   const testsTaken = testSlots.map((slot) => {
-    const teacherId = slot.teacher?._id || slot.teacher;
     const context = resolveSlotBatchContext(slot, batches, branches);
-    const teacher = teachers.find((item) => String(item._id) === String(teacherId));
-    const chapter = getChapterFromTeacher(teacher, slot.chapterNumber);
     const status = deriveSlotStatus(slot, now);
+    const chapterTitle = findChapterTitle(teachers, slot.chapterNumber, slot.subject);
 
     return {
       key: `test-${slot._id}`,
       slotId: slot._id,
-      teacherId,
-      teacherName: teacher?.name || slot.teacher?.name || "",
-      subject: slot.subject || teacher?.subject || "",
+      teacherId: slot.teacher?._id || slot.teacher || "",
+      teacherName: "",
+      subject: slot.subject || "",
       chapterNumber: slot.chapterNumber || "",
-      chapterTitle: chapter?.title || "",
-      chapterId: chapter?._id || "",
+      chapterTitle,
+      chapterId: "",
       branchId: context?.branchId || "",
       branchName: context?.branchName || "",
       batchId: context?.batchId || "",
@@ -82,28 +123,27 @@ export const analyzeTestProgress = ({
         .forEach((entry) => {
           const branchId = String(entry.branch?._id || entry.branch);
           const branchName = branchMap.get(branchId)?.name || "Unknown branch";
+          const subject = teacher.subject || "";
 
           if (viewMode === "batch") {
             batches
-              .filter(
-                (batch) => String(batch.branch?._id || batch.branch) === branchId
-              )
+              .filter((batch) => String(batch.branch?._id || batch.branch) === branchId)
               .forEach((batch) => {
                 const taken = isTestTaken(testSlots, {
-                  teacherId: teacher._id,
                   chapterNumber: chapter.chapterNumber,
                   branchId,
                   batchId: batch._id,
                   viewMode,
+                  subject,
                   batches
                 });
                 if (taken) return;
 
                 const key = buildTestKey(
-                  teacher._id,
                   chapter.chapterNumber,
                   branchId,
                   batch._id,
+                  subject,
                   viewMode
                 );
                 if (pendingKeys.has(key)) return;
@@ -113,7 +153,7 @@ export const analyzeTestProgress = ({
                   key,
                   teacherId: teacher._id,
                   teacherName: teacher.name,
-                  subject: teacher.subject,
+                  subject,
                   chapterNumber: chapter.chapterNumber,
                   chapterTitle: chapter.title || "",
                   chapterId: chapter._id,
@@ -126,15 +166,15 @@ export const analyzeTestProgress = ({
               });
           } else {
             const taken = isTestTaken(testSlots, {
-              teacherId: teacher._id,
               chapterNumber: chapter.chapterNumber,
               branchId,
               viewMode,
+              subject,
               batches
             });
             if (taken) return;
 
-            const key = buildTestKey(teacher._id, chapter.chapterNumber, branchId, null, viewMode);
+            const key = buildTestKey(chapter.chapterNumber, branchId, null, subject, viewMode);
             if (pendingKeys.has(key)) return;
             pendingKeys.add(key);
 
@@ -142,7 +182,7 @@ export const analyzeTestProgress = ({
               key,
               teacherId: teacher._id,
               teacherName: teacher.name,
-              subject: teacher.subject,
+              subject,
               chapterNumber: chapter.chapterNumber,
               chapterTitle: chapter.title || "",
               chapterId: chapter._id,
@@ -160,7 +200,7 @@ export const analyzeTestProgress = ({
   const sortItems = (a, b) =>
     a.branchName.localeCompare(b.branchName) ||
     (a.batchName || "").localeCompare(b.batchName || "") ||
-    a.teacherName.localeCompare(b.teacherName) ||
+    (a.subject || "").localeCompare(b.subject || "") ||
     String(a.chapterNumber).localeCompare(String(b.chapterNumber), undefined, {
       numeric: true
     });
@@ -197,13 +237,13 @@ export const filterBySearch = (items, query) => {
 
   return items.filter((item) => {
     const haystack = [
-      item.teacherName,
       item.subject,
       item.chapterNumber,
       item.chapterTitle,
       item.branchName,
       item.batchName,
       item.topic,
+      item.teacherName,
       item.date?.slice?.(0, 10)
     ]
       .filter(Boolean)
