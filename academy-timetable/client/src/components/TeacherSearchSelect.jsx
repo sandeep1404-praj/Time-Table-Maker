@@ -31,12 +31,12 @@ const TeacherSearchSelect = ({
         value={search}
         onChange={(e) => setSearch(e.target.value)}
         placeholder={placeholder}
-        className="w-full rounded border border-slate-300 p-2 text-sm"
+        className="form-input"
       />
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="mt-2 w-full rounded border border-slate-300 p-2 text-sm"
+        className="form-select mt-2"
         size={compact ? undefined : Math.min(Math.max(filteredTeachers.length + (allowEmpty ? 1 : 0), 3), 8)}
       >
         {allowEmpty && <option value="">{emptyLabel}</option>}

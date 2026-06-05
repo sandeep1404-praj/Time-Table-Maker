@@ -19,33 +19,37 @@ const tabs = [
 
 const App = () => {
   const [activeTab, setActiveTab] = useState("master");
+  const isWideLayout = activeTab === "master" || activeTab === "history";
 
   return (
-    <div className="min-h-screen">
-      <header className="border-b bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          <div>
-            <h1 className="text-xl font-semibold">Guru Aanklan Academy</h1>
-            <p className="text-sm text-slate-500">Timetable Management</p>
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-indigo-50/30">
+      <header className="app-header">
+        <div className="mx-auto flex max-w-[1600px] flex-col gap-4 px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-indigo-700 text-lg font-bold text-white shadow-md shadow-indigo-200">
+              GA
+            </div>
+            <div>
+              <h1 className="app-brand">Guru Aanklan Academy</h1>
+              <p className="app-brand-sub">Timetable Management</p>
+            </div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <nav className="flex flex-wrap gap-2">
             {tabs.map((tab) => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`rounded px-3 py-2 text-sm ${
-                  activeTab === tab.key
-                    ? "bg-slate-900 text-white"
-                    : "border border-slate-200 bg-white text-slate-700"
+                className={`nav-tab ${
+                  activeTab === tab.key ? "nav-tab--active" : "nav-tab--inactive"
                 }`}
               >
                 {tab.label}
               </button>
             ))}
-          </div>
+          </nav>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-6">
+      <main className={`mx-auto px-6 py-6 ${isWideLayout ? "max-w-[1600px]" : "max-w-6xl"}`}>
         {activeTab === "master" && <MasterPage />}
         {activeTab === "teacher" && <TeacherPage />}
         {activeTab === "batch" && <BatchPage />}

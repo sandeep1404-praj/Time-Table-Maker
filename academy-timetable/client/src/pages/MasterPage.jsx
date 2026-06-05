@@ -64,21 +64,17 @@ const MasterPage = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-end gap-2">
-        <button
-          type="button"
-          onClick={handleArchive}
-          className="mr-auto rounded bg-red-600 px-3 py-2 text-sm text-white"
-        >
+    <div className="space-y-5">
+      <div className="toolbar">
+        <button type="button" onClick={handleArchive} className="btn-danger mr-auto">
           Archive Week
         </button>
         <button
           type="button"
           onClick={() => downloadFile("/api/export/all-pdfs", "timetables.zip", "application/zip")}
-          className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+          className="btn-secondary"
         >
-          Download All PDFs (Zip)
+          Download All PDFs
         </button>
         <button
           type="button"
@@ -89,40 +85,41 @@ const MasterPage = () => {
               "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             )
           }
-          className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+          className="btn-secondary"
         >
-          Download Master (Word)
+          Master (Word)
         </button>
         <button
           type="button"
           onClick={() => downloadFile("/api/export/master/pdf", "master-timetable.pdf", "application/pdf")}
-          className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700"
+          className="btn-secondary"
         >
-          Download Master (PDF)
+          Master (PDF)
         </button>
       </div>
-      <div className="grid gap-3 rounded-lg border border-slate-200 bg-white p-4 md:grid-cols-3">
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Add Branch</p>
+
+      <div className="setup-grid">
+        <div className="space-y-3">
+          <p className="setup-section-title">Add Branch</p>
           <div className="flex gap-2">
             <input
               value={newBranch}
               onChange={(e) => setNewBranch(e.target.value)}
               placeholder="Branch name"
-              className="w-full rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
-            <button onClick={handleAddBranch} className="rounded bg-slate-900 px-3 text-sm text-white">
+            <button onClick={handleAddBranch} className="btn-primary shrink-0">
               Add
             </button>
           </div>
         </div>
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Add Batch (Column)</p>
-          <div className="flex gap-2">
+        <div className="space-y-3">
+          <p className="setup-section-title">Add Batch (Column)</p>
+          <div className="flex flex-wrap gap-2">
             <select
               value={selectedBranch}
               onChange={(e) => setSelectedBranch(e.target.value)}
-              className="rounded border border-slate-300 p-2 text-sm"
+              className="form-select min-w-[120px]"
             >
               <option value="">Branch</option>
               {branches.map((branch) => (
@@ -135,24 +132,24 @@ const MasterPage = () => {
               value={newBatch}
               onChange={(e) => setNewBatch(e.target.value)}
               placeholder="Batch name"
-              className="w-full rounded border border-slate-300 p-2 text-sm"
+              className="form-input min-w-[120px] flex-1"
             />
-            <button onClick={handleAddBatch} className="rounded bg-slate-900 px-3 text-sm text-white">
+            <button onClick={handleAddBatch} className="btn-primary shrink-0">
               Add
             </button>
           </div>
           {batches.length === 0 && <p className="text-xs text-slate-500">No batches yet.</p>}
         </div>
-        <div className="space-y-2">
-          <p className="text-sm font-semibold">Add Date Row</p>
+        <div className="space-y-3">
+          <p className="setup-section-title">Add Date Row</p>
           <div className="flex gap-2">
             <input
               type="date"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
-              className="w-full rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
-            <button onClick={handleAddDate} className="rounded bg-slate-900 px-3 text-sm text-white">
+            <button onClick={handleAddDate} className="btn-primary shrink-0">
               Add
             </button>
           </div>
@@ -161,14 +158,15 @@ const MasterPage = () => {
               type="date"
               value={weekStartDate}
               onChange={(e) => setWeekStartDate(e.target.value)}
-              className="w-full rounded border border-slate-300 p-2 text-sm"
+              className="form-input"
             />
-            <button onClick={handleAddWeek} className="rounded bg-slate-900 px-3 text-sm text-white">
+            <button onClick={handleAddWeek} className="btn-primary shrink-0">
               Add Week
             </button>
           </div>
         </div>
       </div>
+
       <MasterGrid />
     </div>
   );

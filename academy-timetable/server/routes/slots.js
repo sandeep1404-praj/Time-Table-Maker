@@ -10,6 +10,24 @@ const {
 
 const router = express.Router();
 
+const isTestSlotPayload = (payload) => payload?.slotType === "test";
+
+const requireTeacherUnlessTest = (req, res, next) => {
+  const payload = { ...req.body, slotType: req.body.slotType || req.existingSlotType };
+  if (!isTestSlotPayload(payload) && !req.body.teacher) {
+    return res.status(400).json({ error: "Teacher is required for non-test slots" });
+  }
+  next();
+};
+
+const normalizeSlotPayload = (payload) => {
+  const normalized = { ...payload };
+  if (isTestSlotPayload(normalized) && !normalized.teacher) {
+    normalized.teacher = null;
+  }
+  return normalized;
+};
+
 const syncSlotStatuses = async (slots) => {
   const now = new Date();
   const updates = [];
@@ -60,13 +78,14 @@ router.post(
     body("date").isISO8601(),
     body("startTime").isString().notEmpty(),
     body("endTime").isString().notEmpty(),
-    body("teacher").isString(),
-    body("batch").isString(),
+    body("teacher").optional({ values: "null" }),
+    body("batch").isString().notEmpty(),
     body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
     body("status")
       .optional()
       .isIn(["scheduled", "ongoing", "completed", "canceled"])
   ],
+  requireTeacherUnlessTest,
   async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
@@ -85,7 +104,7 @@ router.post(
       });
     }
 
-    const createPayload = { ...req.body };
+    const createPayload = normalizeSlotPayload({ ...req.body });
     if (createPayload.status !== "canceled") {
       Object.assign(createPayload, resolveSlotStatusPayload(createPayload));
     } else {
@@ -107,6 +126,7 @@ router.put(
     body("date").optional().isISO8601(),
     body("startTime").optional().isString().notEmpty(),
     body("endTime").optional().isString().notEmpty(),
+    body("teacher").optional({ values: "null" }),
     body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
     body("status")
       .optional()
@@ -123,14 +143,25 @@ router.put(
       return res.status(404).json({ error: "Slot not found" });
     }
 
+    const slotType = req.body.slotType || existing.slotType;
+    const updatePayload = normalizeSlotPayload({
+      ...req.body,
+      slotType,
+      teacher: slotType === "test" ? null : req.body.teacher ?? existing.teacher
+    });
+
+    if (slotType !== "test" && !updatePayload.teacher) {
+      return res.status(400).json({ error: "Teacher is required for non-test slots" });
+    }
+
     const candidate = {
       _id: existing._id,
-      date: req.body.date || existing.date,
-      startTime: req.body.startTime || existing.startTime,
-      endTime: req.body.endTime || existing.endTime,
-      teacher: req.body.teacher || existing.teacher,
-      batch: req.body.batch || existing.batch,
-      status: req.body.status || existing.status
+      date: updatePayload.date || existing.date,
+      startTime: updatePayload.startTime || existing.startTime,
+      endTime: updatePayload.endTime || existing.endTime,
+      teacher: updatePayload.teacher,
+      batch: updatePayload.batch || existing.batch,
+      status: updatePayload.status || existing.status
     };
 
     const conflicts = await findConflicts(candidate);
@@ -145,7 +176,6 @@ router.put(
       return res.status(400).json({ error: "Cancel note is required" });
     }
 
-    const updatePayload = { ...req.body };
     const mergedSlot = {
       date: updatePayload.date || existing.date,
       startTime: updatePayload.startTime || existing.startTime,

@@ -15,6 +15,7 @@ import {
   groupByBranch,
   groupByBatch
 } from "../utils/testProgress";
+import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
 
 const mainTabs = [
   { key: "taken", label: "Tests Taken", description: "Test slots from the master timetable" },
@@ -65,9 +66,10 @@ const TestCard = ({ item, onEdit, onSchedule, showBatch }) => (
           )}
         </div>
         <p className="mt-1 font-semibold text-slate-900">{item.chapterTitle || "Untitled"}</p>
-        <p className="text-sm text-slate-600">
-          {item.teacherName} · {item.subject}
-        </p>
+        <p className="text-sm text-slate-600">{item.subject || "—"}</p>
+        {!showBatch && item.branchName && (
+          <p className="text-xs text-slate-500">{item.branchName}</p>
+        )}
         {showBatch && item.batchName && (
           <p className="text-xs text-slate-500">
             {item.branchName} · {item.batchName}
@@ -75,7 +77,13 @@ const TestCard = ({ item, onEdit, onSchedule, showBatch }) => (
         )}
         {item.date && (
           <p className="mt-1 text-xs text-slate-500">
-            {item.date.slice(0, 10)} {item.startTime}-{item.endTime}
+            <span className="font-semibold text-indigo-600">{getWeekdayName(item.date)}</span>
+            {" · "}
+            {formatDisplayDate(item.date)}
+            {" · "}
+            <span className="font-medium text-slate-700">
+              {item.startTime} – {item.endTime}
+            </span>
             {item.topic ? ` · ${item.topic}` : ""}
           </p>
         )}
@@ -135,7 +143,11 @@ const TestTrackingPage = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [modalSlot, setModalSlot] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [scheduleDefaults, setScheduleDefaults] = useState({ teacherId: "", chapterNumber: "", batchId: "" });
+  const [scheduleDefaults, setScheduleDefaults] = useState({
+    subject: "",
+    chapterNumber: "",
+    batchId: ""
+  });
 
   const filteredBatches = useMemo(() => {
     if (!branchFilterId) return batches;
@@ -187,15 +199,15 @@ const TestTrackingPage = () => {
           <div>
             <h2 className="text-xl font-bold text-slate-900">Test Tracking</h2>
             <p className="mt-1 text-sm text-slate-500">
-              Tests from master timetable appear here. Pending shows completed chapters without a
-              taken test.
+              Tests from master timetable appear here (no teacher required). Pending shows completed
+              chapters without a taken test.
             </p>
           </div>
           <button
             type="button"
             onClick={() => {
               setModalSlot(null);
-              setScheduleDefaults({ teacherId: "", chapterNumber: "", batchId: "" });
+              setScheduleDefaults({ subject: "", chapterNumber: "", batchId: "" });
               setShowAddModal(true);
             }}
             className="rounded-lg bg-violet-600 px-4 py-2 text-sm font-medium text-white hover:bg-violet-700"
@@ -367,7 +379,7 @@ const TestTrackingPage = () => {
                   onSchedule={(item) => {
                     setModalSlot(null);
                     setScheduleDefaults({
-                      teacherId: item.teacherId,
+                      subject: item.subject,
                       chapterNumber: item.chapterNumber,
                       batchId: item.batchId || ""
                     });
@@ -383,13 +395,13 @@ const TestTrackingPage = () => {
       {(showAddModal || modalSlot) && (
         <TestSlotModal
           slot={modalSlot}
-          defaultTeacherId={scheduleDefaults.teacherId}
+          defaultSubject={scheduleDefaults.subject}
           defaultChapterNumber={scheduleDefaults.chapterNumber}
           defaultBatchId={scheduleDefaults.batchId}
           onClose={() => {
             setShowAddModal(false);
             setModalSlot(null);
-            setScheduleDefaults({ teacherId: "", chapterNumber: "", batchId: "" });
+            setScheduleDefaults({ subject: "", chapterNumber: "", batchId: "" });
           }}
         />
       )}

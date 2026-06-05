@@ -4,6 +4,8 @@ import { useBranches } from "../hooks/useBranches";
 import { useBatchTimetable } from "../hooks/useTimetable";
 import api from "../api/client";
 import { useState } from "react";
+import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
+import { getTeacherHighlightStyle } from "../utils/teacherColor";
 
 const BatchView = () => {
   const { data: batches = [] } = useBatches();
@@ -50,96 +52,109 @@ const BatchView = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <label className="text-sm">
-            Branch
-            <select
-              value={selectedBranchId}
-              onChange={(e) => {
-                setSelectedBranchId(e.target.value);
-                setSelectedBatchId("");
-              }}
-              className="ml-2 rounded border border-slate-300 p-2"
-            >
-              <option value="">All</option>
-              {branches.map((branch) => (
-                <option key={branch._id} value={branch._id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="text-sm">
-            Batch
-            <select
-              value={selectedBatchId}
-              onChange={(e) => setSelectedBatchId(e.target.value)}
-              className="ml-2 rounded border border-slate-300 p-2"
-            >
-              <option value="">Select</option>
-              {filteredBatches.map((batch) => (
-                <option key={batch._id} value={batch._id}>
-                  {batch.branch?.name} {batch.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        </div>
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={downloadDocx}
-            disabled={!selectedBatchId}
-            className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
-          >
-            Download (Word)
-          </button>
-          <button
-            type="button"
-            onClick={downloadPdf}
-            disabled={!selectedBatchId}
-            className="rounded border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 disabled:opacity-50"
-          >
-            Download (PDF)
-          </button>
+    <div className="space-y-5">
+      <div className="panel">
+        <div className="panel-body">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div className="flex flex-wrap items-end gap-4">
+              <div>
+                <label className="form-label">Branch</label>
+                <select
+                  value={selectedBranchId}
+                  onChange={(e) => {
+                    setSelectedBranchId(e.target.value);
+                    setSelectedBatchId("");
+                  }}
+                  className="form-select min-w-[160px]"
+                >
+                  <option value="">All</option>
+                  {branches.map((branch) => (
+                    <option key={branch._id} value={branch._id}>
+                      {branch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="form-label">Batch</label>
+                <select
+                  value={selectedBatchId}
+                  onChange={(e) => setSelectedBatchId(e.target.value)}
+                  className="form-select min-w-[200px]"
+                >
+                  <option value="">Select</option>
+                  {filteredBatches.map((batch) => (
+                    <option key={batch._id} value={batch._id}>
+                      {batch.branch?.name} {batch.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={downloadDocx}
+                disabled={!selectedBatchId}
+                className="btn-secondary"
+              >
+                Download (Word)
+              </button>
+              <button
+                type="button"
+                onClick={downloadPdf}
+                disabled={!selectedBatchId}
+                className="btn-secondary"
+              >
+                Download (PDF)
+              </button>
+            </div>
+          </div>
         </div>
       </div>
-      <table className="w-full border-collapse text-sm">
-        <thead className="bg-slate-100">
-          <tr>
-            <th className="border px-2 py-2">Date</th>
-            <th className="border px-2 py-2">Day</th>
-            <th className="border px-2 py-2">Faculty</th>
-            <th className="border px-2 py-2">Chapter</th>
-            <th className="border px-2 py-2">Time</th>
-          </tr>
-        </thead>
-        <tbody>
-          {slots.map((slot) => (
-            <tr key={slot._id}>
-              <td className="border px-2 py-2">{slot.date.slice(0, 10)}</td>
-              <td className="border px-2 py-2">
-                {new Date(slot.date).toLocaleDateString("en-IN", { weekday: "short" })}
-              </td>
-              <td className="border px-2 py-2">
-                <div className="flex items-center gap-2">
-                  <span
-                    className="inline-flex h-2 w-2 rounded-full"
-                    style={{ backgroundColor: slot.teacher?.color || "#94a3b8" }}
-                  />
-                  <span>{slot.teacher?.name}</span>
-                </div>
-              </td>
-              <td className="border px-2 py-2">{slot.topic}</td>
-              <td className="border px-2 py-2">
-                {slot.startTime}-{slot.endTime}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {slots.length === 0 ? (
+        <div className="empty-state">
+          <p className="font-semibold text-slate-700">No schedule to display</p>
+          <p className="mt-1 text-sm text-slate-500">Select a batch to view its timetable.</p>
+        </div>
+      ) : (
+        <div className="data-table-wrap">
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Day</th>
+                <th>Faculty</th>
+                <th>Chapter</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              {slots.map((slot) => (
+                <tr key={slot._id}>
+                  <td className="font-medium">{formatDisplayDate(slot.date)}</td>
+                  <td>
+                    <span className="day-badge">{getWeekdayName(slot.date)}</span>
+                  </td>
+                  <td>
+                    <span
+                      className="inline-block rounded-md border px-2 py-0.5 text-xs font-semibold"
+                      style={getTeacherHighlightStyle(slot.teacher?.color)}
+                    >
+                      {slot.teacher?.name}
+                    </span>
+                  </td>
+                  <td className="text-xs font-medium">{slot.topic}</td>
+                  <td className="text-xs font-semibold text-slate-800">
+                    {slot.startTime} – {slot.endTime}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 };
