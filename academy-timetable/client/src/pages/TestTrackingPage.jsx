@@ -4,6 +4,7 @@ import { useSlots } from "../hooks/useSlots";
 import { useBatches } from "../hooks/useBatches";
 import { useBranches } from "../hooks/useBranches";
 import TeacherSearchSelect from "../components/TeacherSearchSelect";
+import SearchableComboBox from "../components/SearchableComboBox";
 import TestSlotModal from "../components/TestSlotModal";
 import {
   analyzeTestProgress,
@@ -161,6 +162,40 @@ const TestTrackingPage = () => {
     [slots, teachers, batches, branches, viewMode]
   );
 
+  const searchSuggestions = useMemo(() => {
+    const values = new Set();
+    const add = (value) => {
+      const text = String(value || "").trim();
+      if (text) values.add(text);
+    };
+
+    teachers.forEach((teacher) => {
+      add(teacher.name);
+      add(teacher.subject);
+      teacher.chapters?.forEach((chapter) => {
+        add(`Ch. ${chapter.chapterNumber}`);
+        add(chapter.title);
+      });
+    });
+    branches.forEach((branch) => add(branch.name));
+    batches.forEach((batch) => {
+      add(batch.name);
+      add(batch.branch?.name);
+      add(`${batch.branch?.name || ""} ${batch.name}`);
+    });
+    [...analysis.testsTaken, ...analysis.testPending].forEach((item) => {
+      add(item.teacherName);
+      add(item.chapterTitle);
+      add(item.subject);
+      add(item.branchName);
+      add(item.batchName);
+      add(item.topic);
+      add(item.chapterNumber);
+    });
+
+    return Array.from(values).sort();
+  }, [teachers, branches, batches, analysis]);
+
   const filterItems = (items) => {
     let result = filterByTeacher(items, teacherFilterId);
     result = filterByBranch(result, branchFilterId);
@@ -246,50 +281,54 @@ const TestTrackingPage = () => {
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Search
             </label>
-            <input
+            <SearchableComboBox
+              mode="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={setSearchQuery}
+              options={searchSuggestions}
               placeholder="Teacher, chapter, branch, batch, topic..."
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              allowEmpty={false}
+              className="w-full"
+              inputClassName="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              panelClassName="mt-2"
+              noResultsText="Type to search by any visible test field."
             />
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
               Branch
             </label>
-            <select
+            <SearchableComboBox
+              options={branches}
               value={branchFilterId}
-              onChange={(e) => {
-                setBranchFilterId(e.target.value);
+              onChange={(value) => {
+                setBranchFilterId(value);
                 setBatchFilterId("");
               }}
-              className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
-            >
-              <option value="">All branches</option>
-              {branches.map((branch) => (
-                <option key={branch._id} value={branch._id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Search branches..."
+              emptyLabel="All branches"
+              className="w-full"
+              inputClassName="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+              getOptionLabel={(branch) => branch.name}
+              getOptionValue={(branch) => branch._id}
+            />
           </div>
           {viewMode === "batch" && (
             <div>
               <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">
                 Batch
               </label>
-              <select
+              <SearchableComboBox
+                options={filteredBatches}
                 value={batchFilterId}
-                onChange={(e) => setBatchFilterId(e.target.value)}
-                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
-              >
-                <option value="">All batches</option>
-                {filteredBatches.map((batch) => (
-                  <option key={batch._id} value={batch._id}>
-                    {batch.branch?.name} {batch.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setBatchFilterId}
+                placeholder="Search batches..."
+                emptyLabel="All batches"
+                className="w-full"
+                inputClassName="w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm"
+                getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+                getOptionValue={(batch) => batch._id}
+              />
             </div>
           )}
           <div>

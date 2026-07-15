@@ -1,12 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import api from "../api/client";
+import { useToastStore } from "../store/useToastStore";
 
 export const useArchives = () =>
   useQuery({
     queryKey: ["archives"],
     queryFn: async () => {
       const { data } = await api.get("/api/archives");
-      return data;
+      return Array.isArray(data) ? data : data?.archives || data?.data || [];
     }
   });
 
@@ -25,6 +26,7 @@ export const useArchiveData = (archiveId) =>
 
 export const useDeleteArchive = () => {
   const queryClient = useQueryClient();
+  const pushToast = useToastStore((state) => state.pushToast);
   return useMutation({
     mutationFn: async (archiveId) => {
       await api.delete(`/api/archives/${archiveId}`);
@@ -32,6 +34,10 @@ export const useDeleteArchive = () => {
     onSuccess: (_data, archiveId) => {
       queryClient.invalidateQueries({ queryKey: ["archives"] });
       queryClient.removeQueries({ queryKey: ["archive-data", archiveId] });
+      pushToast({ title: "Archive deleted", message: "The archived week was removed.", tone: "success" });
+    },
+    onError: () => {
+      pushToast({ title: "Unable to delete archive", message: "Please try again.", tone: "error" });
     }
   });
 };

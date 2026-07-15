@@ -11,6 +11,7 @@ import {
 } from "../utils/chapterProgress";
 import { getAllChapterOptions } from "../utils/testProgress";
 import TeacherSearchSelect from "./TeacherSearchSelect";
+import SearchableComboBox from "./SearchableComboBox";
 
 const SlotModal = ({ initialData, onClose, onSave }) => {
   const { data: teachers = [] } = useTeachers();
@@ -321,26 +322,18 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
           </label>
           <label>
             <span className="form-label">Chapter</span>
-            <select
+            <SearchableComboBox
+              options={chapterOptions}
               value={form.chapterNumber}
-              onChange={(e) => handleChapterChange(e.target.value)}
-              className="form-select"
-            >
-              <option value="">Select</option>
-              {chapterOptions.map((chapter) => (
-                <option
-                  key={
-                    isTestSlot
-                      ? `${chapter.subject}-${chapter.chapterNumber}`
-                      : chapter.chapterNumber
-                  }
-                  value={chapter.chapterNumber}
-                >
-                  {isTestSlot && chapter.subject ? `${chapter.subject} · ` : ""}
-                  {chapter.chapterNumber} {chapter.title}
-                </option>
-              ))}
-            </select>
+              onChange={handleChapterChange}
+              placeholder="Search chapter..."
+              emptyLabel="Select"
+              inputClassName="form-input"
+              getOptionLabel={(chapter) =>
+                `${isTestSlot && chapter.subject ? `${chapter.subject} · ` : ""}${chapter.chapterNumber} ${chapter.title}`.trim()
+              }
+              getOptionValue={(chapter) => chapter.chapterNumber}
+            />
           </label>
           {/* <div className="text-sm">
             <p className="mb-1">Add Teacher (uses Subject above)</p>
@@ -364,18 +357,16 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
           </div> */}
           <label>
             <span className="form-label">Batch</span>
-            <select
+            <SearchableComboBox
+              options={batches}
               value={form.batch}
-              onChange={(e) => updateField("batch", e.target.value)}
-              className="form-select"
-            >
-              <option value="">Select</option>
-              {batches.map((batch) => (
-                <option key={batch._id} value={batch._id}>
-                  {batch.branch?.name} {batch.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => updateField("batch", value)}
+              placeholder="Search batch..."
+              emptyLabel="Select"
+              inputClassName="form-input"
+              getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+              getOptionValue={(batch) => batch._id}
+            />
           </label>
           <label>
             <span className="form-label">Start Time</span>

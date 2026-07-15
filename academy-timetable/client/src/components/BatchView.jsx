@@ -6,6 +6,7 @@ import api from "../api/client";
 import { useState } from "react";
 import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
 import { getTeacherHighlightStyle } from "../utils/teacherColor";
+import SearchableComboBox from "./SearchableComboBox";
 
 const BatchView = () => {
   const { data: batches = [] } = useBatches();
@@ -54,41 +55,39 @@ const BatchView = () => {
   return (
     <div className="space-y-5">
       <div className="panel">
-        <div className="panel-body">
+        <div className="panel-body h-[21rem] overflow-y-auto">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="flex flex-wrap items-end gap-4">
               <div>
                 <label className="form-label">Branch</label>
-                <select
+                <SearchableComboBox
+                  options={branches}
                   value={selectedBranchId}
-                  onChange={(e) => {
-                    setSelectedBranchId(e.target.value);
+                  onChange={(value) => {
+                    setSelectedBranchId(value);
                     setSelectedBatchId("");
                   }}
-                  className="form-select min-w-[160px]"
-                >
-                  <option value="">All</option>
-                  {branches.map((branch) => (
-                    <option key={branch._id} value={branch._id}>
-                      {branch.name}
-                    </option>
-                  ))}
-                </select>
+                  placeholder="Search branch..."
+                  emptyLabel="All"
+                  className="min-w-[180px]"
+                  inputClassName="form-input min-w-[180px]"
+                  getOptionLabel={(branch) => branch.name}
+                  getOptionValue={(branch) => branch._id}
+                />
               </div>
               <div>
                 <label className="form-label">Batch</label>
-                <select
+                <SearchableComboBox
+                  options={filteredBatches}
                   value={selectedBatchId}
-                  onChange={(e) => setSelectedBatchId(e.target.value)}
-                  className="form-select min-w-[200px]"
-                >
-                  <option value="">Select</option>
-                  {filteredBatches.map((batch) => (
-                    <option key={batch._id} value={batch._id}>
-                      {batch.branch?.name} {batch.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedBatchId}
+                  placeholder="Search batch..."
+                  emptyLabel="Select"
+                  className="min-w-[220px]"
+                  inputClassName="form-input min-w-[220px]"
+                  getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+                  getOptionValue={(batch) => batch._id}
+                />
               </div>
             </div>
             <div className="flex items-center gap-2">

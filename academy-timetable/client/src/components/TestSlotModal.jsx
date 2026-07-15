@@ -3,6 +3,7 @@ import { useTeachers } from "../hooks/useTeachers";
 import { useBatches } from "../hooks/useBatches";
 import { useCreateSlot, useUpdateSlot, useDeleteSlot } from "../hooks/useSlots";
 import { getAllChapterOptions } from "../utils/testProgress";
+import SearchableComboBox from "./SearchableComboBox";
 
 const emptyForm = {
   date: "",
@@ -108,10 +109,11 @@ const TestSlotModal = ({
   };
 
   return (
-    <div className="fixed inset-0 z-30 flex items-center justify-center bg-black/40 p-4">
+    <div className="fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-black/40 p-4">
       <form
         onSubmit={handleSubmit}
-        className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        className="relative z-[81] w-full max-w-2xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        style={{ maxHeight: "calc(100vh - 2rem)" }}
       >
         <div className="mb-4 flex items-center justify-between">
           <div>
@@ -150,40 +152,32 @@ const TestSlotModal = ({
           </label>
           <label className="text-sm">
             Chapter
-            <select
+            <SearchableComboBox
+              mode="value"
+              options={chapterOptions}
               value={form.chapterNumber}
-              onChange={(e) => handleChapterChange(e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2"
-            >
-              <option value="">Select or type below</option>
-              {chapterOptions.map((chapter) => (
-                <option key={`${chapter.subject}-${chapter.chapterNumber}`} value={chapter.chapterNumber}>
-                  {chapter.subject ? `${chapter.subject} · ` : ""}Ch. {chapter.chapterNumber}{" "}
-                  {chapter.title}
-                </option>
-              ))}
-            </select>
-            <input
-              value={form.chapterNumber}
-              onChange={(e) => updateField("chapterNumber", e.target.value)}
-              placeholder="Chapter no."
-              className="mt-2 w-full rounded-lg border border-slate-300 p-2 text-sm"
+              onChange={handleChapterChange}
+              placeholder="Search chapter..."
+              emptyLabel="Select chapter"
+              className="mt-1"
+              inputClassName="mt-1 w-full rounded-lg border border-slate-300 p-2 text-sm"
+              getOptionLabel={(chapter) => `${chapter.subject ? `${chapter.subject} · ` : ""}Ch. ${chapter.chapterNumber} ${chapter.title}`.trim()}
+              getOptionValue={(chapter) => chapter.chapterNumber}
             />
           </label>
           <label className="text-sm md:col-span-2">
             Batch
-            <select
+            <SearchableComboBox
+              options={batches}
               value={form.batch}
-              onChange={(e) => updateField("batch", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2"
-            >
-              <option value="">Select</option>
-              {batches.map((batch) => (
-                <option key={batch._id} value={batch._id}>
-                  {batch.branch?.name} {batch.name}
-                </option>
-              ))}
-            </select>
+              onChange={(value) => updateField("batch", value)}
+              placeholder="Search batch..."
+              emptyLabel="Select"
+              className="mt-1"
+              inputClassName="mt-1 w-full rounded-lg border border-slate-300 p-2"
+              getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+              getOptionValue={(batch) => batch._id}
+            />
           </label>
           <label className="text-sm">
             Start

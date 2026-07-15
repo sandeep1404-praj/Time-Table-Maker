@@ -1,7 +1,7 @@
 import { deriveSlotStatus } from "../utils/slotStatus";
 import { getTeacherHighlightStyle } from "../utils/teacherColor";
 
-const SlotCard = ({ slot, muted = false, useStoredStatus = false }) => {
+const SlotCard = ({ slot, muted = false, useStoredStatus = false, showOverlapBadge = false }) => {
   const status = useStoredStatus ? slot.status : deriveSlotStatus(slot);
   const teacherColor = slot.teacher?.color;
 
@@ -20,7 +20,10 @@ const SlotCard = ({ slot, muted = false, useStoredStatus = false }) => {
           className="slot-card__line slot-card__teacher"
           style={getTeacherHighlightStyle(teacherColor)}
         >
-          {slot.teacher?.name || "—"}
+          <span className="mr-1">{slot.teacher?.name || "—"}</span>
+          {showOverlapBadge && slot.teacher?.allowScheduleOverlap ? (
+            <span className="slot-card__teacher-overlap">Overlap</span>
+          ) : null}
         </div>
       )}
 

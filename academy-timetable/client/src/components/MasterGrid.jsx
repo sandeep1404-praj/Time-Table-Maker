@@ -5,10 +5,14 @@ import { useDates, useDeleteDateRow } from "../hooks/useDates";
 import SlotModal from "./SlotModal";
 import SlotCard from "./SlotCard";
 import DateCell from "./DateCell";
+import { getExactTimeOverlapIds } from "../utils/exactTimeOverlap";
 
 const groupSlotsByDate = (slots, extraDates) => {
   const map = new Map();
-  slots.forEach((slot) => {
+  const normalizedSlots = Array.isArray(slots) ? slots : [];
+  const normalizedExtraDates = Array.isArray(extraDates) ? extraDates : [];
+
+  normalizedSlots.forEach((slot) => {
     const dateKey = slot.date.slice(0, 10);
     if (!map.has(dateKey)) {
       map.set(dateKey, { date: dateKey });
@@ -18,7 +22,7 @@ const groupSlotsByDate = (slots, extraDates) => {
     row[slot.batch?._id].push(slot);
   });
 
-  extraDates.forEach((date) => {
+  normalizedExtraDates.forEach((date) => {
     if (!map.has(date)) {
       map.set(date, { date });
     }
@@ -35,7 +39,10 @@ const MasterGrid = () => {
   const updateSlot = useUpdateSlot();
   const deleteDateRow = useDeleteDateRow();
   const [activeCell, setActiveCell] = useState(null);
-  const extraDates = dateRows.map((row) => row.date.slice(0, 10));
+  const normalizedDateRows = Array.isArray(dateRows) ? dateRows : [];
+  const normalizedBatches = Array.isArray(batches) ? batches : [];
+  const extraDates = normalizedDateRows.map((row) => row.date.slice(0, 10));
+  const exactOverlapIds = useMemo(() => getExactTimeOverlapIds(slots), [slots]);
 
   const rowData = useMemo(() => groupSlotsByDate(slots, extraDates), [slots, extraDates]);
 
@@ -68,7 +75,7 @@ const MasterGrid = () => {
         <thead>
           <tr>
             <th className="sticky-col timetable-col-date">Date</th>
-            {batches.map((batch) => (
+            {normalizedBatches.map((batch) => (
               <th key={batch._id} className="timetable-col-batch">
                 <div className="batch-header-branch">{batch.branch?.name}</div>
                 <div className="batch-header-name">{batch.name}</div>
@@ -86,7 +93,7 @@ const MasterGrid = () => {
                   onDelete={() => handleDeleteRow(row.date)}
                 />
               </td>
-              {batches.map((batch) => {
+              {normalizedBatches.map((batch) => {
                 const cellSlots = row[batch._id] || [];
                 return (
                   <td
@@ -99,7 +106,11 @@ const MasterGrid = () => {
                     ) : (
                       <div className="space-y-2">
                         {cellSlots.map((slot) => (
-                          <SlotCard key={slot._id} slot={slot} />
+                          <SlotCard
+                            key={slot._id}
+                            slot={slot}
+                            showOverlapBadge={exactOverlapIds.has(slot._id)}
+                          />
                         ))}
                       </div>
                     )}

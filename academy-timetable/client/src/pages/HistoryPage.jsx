@@ -3,10 +3,15 @@ import { useBatches } from "../hooks/useBatches";
 import { useArchives, useArchiveData, useDeleteArchive } from "../hooks/useArchives";
 import SlotCard from "../components/SlotCard";
 import DateCell from "../components/DateCell";
+import SearchableComboBox from "../components/SearchableComboBox";
+import { getExactTimeOverlapIds } from "../utils/exactTimeOverlap";
 
 const groupSlotsByDate = (slots, extraDates) => {
   const map = new Map();
-  slots.forEach((slot) => {
+  const normalizedSlots = Array.isArray(slots) ? slots : [];
+  const normalizedExtraDates = Array.isArray(extraDates) ? extraDates : [];
+
+  normalizedSlots.forEach((slot) => {
     const dateKey = slot.date.slice(0, 10);
     if (!map.has(dateKey)) {
       map.set(dateKey, { date: dateKey });
@@ -16,7 +21,7 @@ const groupSlotsByDate = (slots, extraDates) => {
     row[slot.batch?._id].push(slot);
   });
 
-  extraDates.forEach((date) => {
+  normalizedExtraDates.forEach((date) => {
     if (!map.has(date)) {
       map.set(date, { date });
     }
@@ -32,7 +37,9 @@ const HistoryPage = () => {
   const [selectedArchiveId, setSelectedArchiveId] = useState("");
   const { data: archiveData } = useArchiveData(selectedArchiveId);
 
-  const selectedArchive = archives.find((arc) => arc._id === selectedArchiveId);
+  const normalizedArchives = Array.isArray(archives) ? archives : [];
+  const normalizedBatches = Array.isArray(batches) ? batches : [];
+  const selectedArchive = normalizedArchives.find((arc) => arc._id === selectedArchiveId);
 
   const handleDeleteArchive = async () => {
     if (!selectedArchiveId || !selectedArchive) return;
@@ -50,9 +57,14 @@ const HistoryPage = () => {
     return groupSlotsByDate(archiveData.slots || [], extraDates);
   }, [archiveData]);
 
+  const exactOverlapIds = useMemo(
+    () => getExactTimeOverlapIds(archiveData?.slots || []),
+    [archiveData?.slots]
+  );
+
   return (
     <div className="space-y-5">
-      <div className="panel">
+      <div className="panel h-[21rem] overflow-y-auto">
         <div className="panel-header">
           <h2 className="text-lg font-bold text-slate-900">Archived Timetables</h2>
           <p className="mt-0.5 text-sm text-slate-500">Browse and manage previously archived weeks.</p>
@@ -61,18 +73,17 @@ const HistoryPage = () => {
           <div className="flex flex-wrap items-center gap-3">
             <div>
               <label className="form-label">Select Archive Week</label>
-              <select
+              <SearchableComboBox
+                options={normalizedArchives}
                 value={selectedArchiveId}
-                onChange={(e) => setSelectedArchiveId(e.target.value)}
-                className="form-select min-w-[260px]"
-              >
-                <option value="">Select an archive...</option>
-                {archives.map((arc) => (
-                  <option key={arc._id} value={arc._id}>
-                    {arc.name}
-                  </option>
-                ))}
-              </select>
+                onChange={setSelectedArchiveId}
+                placeholder="Search archive week..."
+                emptyLabel="Select an archive..."
+                className="min-w-[280px]"
+                inputClassName="form-input min-w-[280px]"
+                getOptionLabel={(archive) => archive.name}
+                getOptionValue={(archive) => archive._id}
+              />
             </div>
             {selectedArchiveId && (
               <button
@@ -104,7 +115,7 @@ const HistoryPage = () => {
             <thead>
               <tr>
                 <th className="sticky-col timetable-col-date">Date</th>
-                {batches.map((batch) => (
+                {normalizedBatches.map((batch) => (
                   <th key={batch._id} className="timetable-col-batch">
                     <div className="batch-header-branch">{batch.branch?.name}</div>
                     <div className="batch-header-name">{batch.name}</div>
@@ -118,7 +129,7 @@ const HistoryPage = () => {
                   <td className="sticky-col timetable-col-date px-2 py-3">
                     <DateCell date={row.date} />
                   </td>
-                  {batches.map((batch) => {
+                  {normalizedBatches.map((batch) => {
                     const cellSlots = row[batch._id] || [];
                     return (
                       <td key={batch._id} className="timetable-cell timetable-col-batch">
@@ -127,7 +138,13 @@ const HistoryPage = () => {
                         ) : (
                           <div className="space-y-2">
                             {cellSlots.map((slot) => (
-                              <SlotCard key={slot._id} slot={slot} muted useStoredStatus />
+                              <SlotCard
+                                key={slot._id}
+                                slot={slot}
+                                muted
+                                useStoredStatus
+                                showOverlapBadge={exactOverlapIds.has(slot._id)}
+                              />
                             ))}
                           </div>
                         )}

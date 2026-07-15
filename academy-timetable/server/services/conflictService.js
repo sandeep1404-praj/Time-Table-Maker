@@ -3,17 +3,18 @@ const Teacher = require("../models/Teacher");
 const TimeSlot = require("../models/TimeSlot");
 
 const hasOverlap = (a, b) => a.startTime < b.endTime && a.endTime > b.startTime;
+const hasExactSameTime = (a, b) => a.startTime === b.startTime && a.endTime === b.endTime;
+
+const getTeacherId = (value) => value?._id || value || null;
 
 const findTeacherConflicts = async (newSlot) => {
-  if (!newSlot.teacher) return [];
+  const teacherId = getTeacherId(newSlot.teacher);
+  if (!teacherId) return [];
 
-  const teacher = await Teacher.findById(newSlot.teacher).select("allowScheduleOverlap");
-  if (teacher?.allowScheduleOverlap) {
-    return [];
-  }
+  const teacher = await Teacher.findById(teacherId).select("allowScheduleOverlap");
 
   const existingSlots = await TimeSlot.find({
-    teacher: newSlot.teacher,
+    teacher: teacherId,
     date: newSlot.date,
     status: { $ne: "canceled" },
     ...(newSlot._id ? { _id: { $ne: newSlot._id } } : {})
@@ -22,7 +23,19 @@ const findTeacherConflicts = async (newSlot) => {
     .populate({ path: "batch", populate: "branch" });
 
   return existingSlots
-    .filter((slot) => hasOverlap(newSlot, slot))
+    .filter(
+      (slot) => {
+        if (!hasOverlap(newSlot, slot)) {
+          return false;
+        }
+
+        if (teacher?.allowScheduleOverlap && hasExactSameTime(newSlot, slot)) {
+          return false;
+        }
+
+        return true;
+      }
+    )
     .map((slot) => ({ type: "teacher", slot }));
 };
 
@@ -46,6 +59,7 @@ const findConflicts = async (newSlot) => {
   if (newSlot.status === "canceled") {
     return [];
   }
+
   const [teacherConflicts, batchConflicts] = await Promise.all([
     findTeacherConflicts(newSlot),
     findBatchConflicts(newSlot)

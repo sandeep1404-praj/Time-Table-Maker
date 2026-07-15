@@ -44,9 +44,9 @@ const TeacherView = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <div className="panel">
-        <div className="panel-body">
+        <div className="panel-body h-[21rem] overflow-y-auto">
           <div className="flex flex-wrap items-end justify-between gap-4">
             <div className="min-w-[240px] max-w-sm flex-1">
               <label className="form-label">Teacher</label>

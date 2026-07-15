@@ -1,5 +1,6 @@
 import { useState } from "react";
 import MasterGrid from "../components/MasterGrid";
+import SearchableComboBox from "../components/SearchableComboBox";
 import { useBranches, useCreateBranch } from "../hooks/useBranches";
 import { useBatches, useCreateBatch } from "../hooks/useBatches";
 import { useCreateDate, useCreateWeekDates } from "../hooks/useDates";
@@ -12,6 +13,8 @@ const MasterPage = () => {
   const createBatch = useCreateBatch();
   const createDate = useCreateDate();
   const createWeekDates = useCreateWeekDates();
+  const normalizedBranches = Array.isArray(branches) ? branches : [];
+  const normalizedBatches = Array.isArray(batches) ? batches : [];
   const [newBranch, setNewBranch] = useState("");
   const [newBatch, setNewBatch] = useState("");
   const [selectedBranch, setSelectedBranch] = useState("");
@@ -116,18 +119,17 @@ const MasterPage = () => {
         <div className="space-y-3">
           <p className="setup-section-title">Add Batch (Column)</p>
           <div className="flex flex-wrap gap-2">
-            <select
+            <SearchableComboBox
+              options={normalizedBranches}
               value={selectedBranch}
-              onChange={(e) => setSelectedBranch(e.target.value)}
-              className="form-select min-w-[120px]"
-            >
-              <option value="">Branch</option>
-              {branches.map((branch) => (
-                <option key={branch._id} value={branch._id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
+              onChange={setSelectedBranch}
+              placeholder="Search branch..."
+              emptyLabel="Branch"
+              className="min-w-[180px]"
+              inputClassName="form-input min-w-[180px]"
+              getOptionLabel={(branch) => branch.name}
+              getOptionValue={(branch) => branch._id}
+            />
             <input
               value={newBatch}
               onChange={(e) => setNewBatch(e.target.value)}
@@ -138,7 +140,7 @@ const MasterPage = () => {
               Add
             </button>
           </div>
-          {batches.length === 0 && <p className="text-xs text-slate-500">No batches yet.</p>}
+          {normalizedBatches.length === 0 && <p className="text-xs text-slate-500">No batches yet.</p>}
         </div>
         <div className="space-y-3">
           <p className="setup-section-title">Add Date Row</p>

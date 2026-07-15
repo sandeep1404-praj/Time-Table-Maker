@@ -10,6 +10,19 @@ const {
 
 const router = express.Router();
 
+const buildConflictMessage = (conflicts) => {
+  const types = [...new Set(conflicts.map((conflict) => conflict.type))];
+  if (types.length === 0) {
+    return "Conflict detected: overlapping slot.";
+  }
+
+  if (types.length === 1) {
+    return `Conflict detected: overlapping ${types[0]} slot.`;
+  }
+
+  return "Conflict detected: overlapping teacher and batch slots.";
+};
+
 const isTestSlotPayload = (payload) => payload?.slotType === "test";
 
 const requireTeacherUnlessTest = (req, res, next) => {
@@ -99,7 +112,7 @@ router.post(
     const conflicts = await findConflicts(req.body);
     if (conflicts.length) {
       return res.status(409).json({
-        message: "Conflict detected: overlapping teacher or batch slot.",
+        message: buildConflictMessage(conflicts),
         conflicts
       });
     }
@@ -167,7 +180,7 @@ router.put(
     const conflicts = await findConflicts(candidate);
     if (conflicts.length) {
       return res.status(409).json({
-        message: "Conflict detected: overlapping teacher or batch slot.",
+        message: buildConflictMessage(conflicts),
         conflicts
       });
     }

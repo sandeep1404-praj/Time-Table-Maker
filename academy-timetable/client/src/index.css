@@ -7,6 +7,10 @@
     font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
     @apply bg-slate-50 text-slate-800 antialiased;
   }
+
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 @layer components {
@@ -92,6 +96,9 @@
 
   .timetable-wrap {
     @apply overflow-x-auto overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-sm;
+    max-height: calc(100vh - 18rem);
+    min-height: 24rem;
+    overscroll-behavior: contain;
     scrollbar-width: thin;
     scrollbar-color: #c7d2fe #f1f5f9;
   }
@@ -114,7 +121,8 @@
   }
 
   .timetable-table {
-    @apply border-collapse text-sm;
+    @apply border-separate text-sm;
+    border-spacing: 0;
     table-layout: fixed;
     width: max-content;
   }
@@ -124,7 +132,7 @@
   }
 
   .timetable-table th {
-    @apply border-b border-slate-200 px-2 py-3 text-center font-semibold text-slate-700;
+    @apply sticky top-0 z-50 border-b border-slate-200 bg-slate-100/95 px-2 py-3 text-center font-semibold text-slate-700 backdrop-blur-sm;
   }
 
   .timetable-col-date {
@@ -140,7 +148,7 @@
   }
 
   .timetable-table th.sticky-col {
-    @apply sticky left-0 z-20 bg-slate-100 text-left;
+    @apply sticky left-0 z-[60] bg-slate-100 text-left;
   }
 
   .timetable-table td {
@@ -149,7 +157,7 @@
   }
 
   .timetable-table td.sticky-col {
-    @apply sticky left-0 z-10 border-r border-slate-200 bg-white;
+    @apply sticky left-0 z-20 border-r border-slate-200 bg-white;
   }
 
   .timetable-table tbody tr:hover td {
@@ -260,12 +268,18 @@
     @apply mt-1.5 inline-block rounded-md bg-amber-50 px-2 py-0.5 text-xs font-bold uppercase tracking-wider text-amber-700 ring-1 ring-inset ring-amber-200;
   }
 
+  .slot-card__teacher-overlap {
+    @apply ml-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700;
+  }
+
   .modal-overlay {
-    @apply fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-sm;
+    @apply fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-900/45 p-4 backdrop-blur-sm;
   }
 
   .modal-panel {
-    @apply w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl;
+    @apply relative z-[81] w-full max-w-3xl rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl;
+    max-height: calc(100vh - 2rem);
+    overflow-y: auto;
   }
 
   .modal-title {
