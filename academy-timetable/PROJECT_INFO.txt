@@ -35,11 +35,53 @@ Key Features
   - Delete Teachers, Branches, and Batches.
   - Slot deletion is only in the master slot modal.
 
-Frontend Pages
-- Master Timetable
-- Teacher View
-- Batch View
-- Manage
+Frontend Pages & Client Features
+- Pages (routes):
+  - `/master` — Master timetable and slot editor (wide layout)
+  - `/teacher` — Teacher schedules, exports and teacher-specific actions
+  - `/batch` — Batch schedules and exports
+  - `/tracking` — Chapter progress tracking across teachers/branches/batches
+  - `/tests` — Test scheduling and test progress tracking
+  - `/history` — Archived timetables (archives)
+  - `/manage` — Manage teachers, branches, batches, and chapters
+
+- Master timetable features:
+  - `MasterGrid` shows columns as Branch+Batch and rows as DateRows
+  - Toolbar: Archive Week, Download All PDFs, Master DOCX, Master PDF
+  - Create Branch, Create Batch (assign to branch), Add Date Row, Add Week
+  - Cells open slot modals for create/edit; slots display time, topic, teacher
+
+- Manage page features:
+  - Create / Edit / Delete Teachers; subject auto-fills in slot form
+  - Toggle `allowScheduleOverlap` per teacher to bypass conflict checks
+  - Add / Edit / Delete teacher chapters with planned hours
+  - `ChapterCompletionModal` to mark chapter completion per branch/batch
+  - Delete Branches and Batches with confirmation
+
+- Teacher / Batch views:
+  - Filtered timetable views per teacher or batch with export options
+  - Searchable selects (`SearchableComboBox`, `TeacherSearchSelect`) for picks
+
+- Components & UI:
+  - `SlotModal`, `TestSlotModal` for slot/test creation and editing
+  - `ConflictBanner` shows conflicts in slot modal or page context
+  - `ToastViewport` for in-app notifications
+
+- Client stack & libraries (client/package.json):
+  - `react`, `react-dom`, `react-router-dom`
+  - `@tanstack/react-query`, `zustand` for data/state management
+  - `axios` for API calls; `date-fns` for date utilities
+  - `ag-grid` used by grid components; Vite + Tailwind for build/UI
+
+- Hooks & utils (client/src/hooks, client/src/utils):
+  - Hooks: `useBranches`, `useBatches`, `useDates`, `useSlots`, `useTeachers`, `useConflicts`, `useTimetable` (query/mutation wrappers)
+  - Utils: `time.js`, `dateFormat.js`, `exactTimeOverlap.js`, `slotStatus.js`, `teacherColor.js`, `chapterProgress.js`, `testProgress.js`
+
+- UX details & constraints:
+  - Slot form requires date, start time, end time, teacher, and batch
+  - Conflicts block saving unless `allowScheduleOverlap` is set for the teacher
+  - Master table includes all DateRow dates even if no slots exist
+  - Teacher names stored in lowercase in DB to avoid duplicates
 
 Backend API Routes
 - Slots: GET/POST/PUT/DELETE /api/slots
