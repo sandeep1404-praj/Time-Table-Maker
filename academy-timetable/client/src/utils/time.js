@@ -3,23 +3,95 @@ export const parseTimeToMinutes = (timeValue) => {
 
   let raw = String(timeValue).trim();
   if (raw.includes("T")) {
-    raw = raw.split("T")[1].slice(0, 5);
+    raw = raw.split("T")[1].slice(0, 8).trim();
   }
 
-  const segments = raw.split(":");
-  if (segments.length < 2) return null;
+  const match = raw.match(/^(\d{1,2}):(\d{2})(?:\s*([AP]M))?$/i);
+  if (!match) return null;
 
-  const hours = Number(segments[0]);
-  const minutes = Number(segments[1]);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return null;
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3]?.toUpperCase();
+  if (Number.isNaN(hours) || Number.isNaN(minutes) || minutes > 59) return null;
+
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (hours === 12) {
+      hours = 0;
+    }
+    if (meridiem === "PM") {
+      hours += 12;
+    }
+  } else if (hours > 23) {
+    return null;
+  }
 
   return hours * 60 + minutes;
 };
+
+const padTwo = (value) => String(value).padStart(2, "0");
 
 export const minutesToTimeString = (totalMinutes) => {
   const hours = Math.floor(totalMinutes / 60) % 24;
   const minutes = totalMinutes % 60;
   return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}`;
+};
+
+export const minutesToTimeParts = (totalMinutes) => {
+  const normalizedMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+  const hours24 = Math.floor(normalizedMinutes / 60);
+  const minutes = normalizedMinutes % 60;
+  const period = hours24 >= 12 ? "PM" : "AM";
+  const hours12 = hours24 % 12 || 12;
+
+  return {
+    time: `${padTwo(hours12)}:${padTwo(minutes)}`,
+    period
+  };
+};
+
+export const formatTimeForStorage = (timeValue, period = "AM") => {
+  if (!timeValue) return "";
+  const normalizedTime = String(timeValue).trim();
+  if (/\s[AP]M$/i.test(normalizedTime)) {
+    const parsed = parseTimeToMinutes(normalizedTime);
+    if (parsed === null) return normalizedTime.toUpperCase();
+    const parts = minutesToTimeParts(parsed);
+    return `${parts.time} ${parts.period}`;
+  }
+
+  const [hourValue, minuteValue] = normalizedTime.split(":");
+  if (hourValue == null || minuteValue == null) return normalizedTime.toUpperCase();
+
+  let hour = Number(hourValue);
+  const minute = Number(minuteValue);
+  if (Number.isNaN(hour) || Number.isNaN(minute)) return normalizedTime.toUpperCase();
+
+  const normalizedPeriod = String(period).toUpperCase() === "PM" ? "PM" : "AM";
+  if (hour === 0) hour = 12;
+  if (hour > 12) {
+    hour -= 12;
+  }
+
+  return `${padTwo(hour)}:${padTwo(minute)} ${normalizedPeriod}`;
+};
+
+export const formatTimeForDisplay = (timeValue) => formatTimeForStorage(timeValue);
+
+export const splitStoredTime = (timeValue) => {
+  if (!timeValue) {
+    return { time: "", period: "AM" };
+  }
+
+  const raw = String(timeValue).trim().toUpperCase();
+  const match = raw.match(/^(\d{1,2}:\d{2})(?:\s*([AP]M))?$/);
+  if (!match) {
+    return { time: raw, period: "AM" };
+  }
+
+  const time = match[1];
+  const period = match[2] || (parseTimeToMinutes(time) >= 720 ? "PM" : "AM");
+  return { time, period };
 };
 
 export const resolveEndMinutes = (startMinutes, endMinutes) => {
@@ -58,7 +130,12 @@ export const parseSlotDateTime = (date, timeStr) => {
     typeof date === "string"
       ? date.slice(0, 10)
       : new Date(date).toISOString().slice(0, 10);
-  return new Date(`${dateStr}T${timeStr}`);
+  const minutes = parseTimeToMinutes(timeStr);
+  if (minutes === null) return new Date(`${dateStr}T00:00:00`);
+
+  const hours24 = Math.floor(minutes / 60) % 24;
+  const minutesPart = minutes % 60;
+  return new Date(`${dateStr}T${padTwo(hours24)}:${padTwo(minutesPart)}:00`);
 };
 
 export const getSlotEndDateTime = (slot) => {

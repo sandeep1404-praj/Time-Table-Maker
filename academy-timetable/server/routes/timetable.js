@@ -1,5 +1,6 @@
-const express = require("express");
-const TimeSlot = require("../models/TimeSlot");
+import express from "express";
+import TimeSlot from "../models/TimeSlot.js";
+import { sortSlotsByDateAndTime } from "../utils/time.js";
 
 const router = express.Router();
 
@@ -10,10 +11,11 @@ router.get("/teacher/:teacherId", async (req, res) => {
   } else {
     query.isArchived = { $ne: true };
   }
-  const slots = await TimeSlot.find(query)
-    .populate("batch")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find(query)
+      .populate("batch")
+      .populate({ path: "batch", populate: "branch" })
+  );
   res.json(slots);
 });
 
@@ -24,11 +26,12 @@ router.get("/batch/:batchId", async (req, res) => {
   } else {
     query.isArchived = { $ne: true };
   }
-  const slots = await TimeSlot.find(query)
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find(query)
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
   res.json(slots);
 });
 
-module.exports = router;
+export default router;

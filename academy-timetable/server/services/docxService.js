@@ -1,4 +1,4 @@
-const {
+import {
   Document,
   Packer,
   Paragraph,
@@ -13,11 +13,12 @@ const {
   PageOrientation,
   TableLayoutType,
   VerticalAlign
-} = require("docx");
-const TimeSlot = require("../models/TimeSlot");
-const Teacher = require("../models/Teacher");
-const Batch = require("../models/Batch");
-const DateRow = require("../models/DateRow");
+} from "docx";
+import TimeSlot from "../models/TimeSlot.js";
+import Teacher from "../models/Teacher.js";
+import Batch from "../models/Batch.js";
+import DateRow from "../models/DateRow.js";
+import { formatTimeForDisplay, sortSlotsByDateAndTime } from "../utils/time.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 const getDay = (date) => new Date(date).toLocaleDateString("en-IN", { weekday: "short" });
@@ -70,7 +71,7 @@ const buildTeacherTable = (slots) => {
         createCell({ text: formatDate(slot.date) }),
         createCell({ text: getDay(slot.date) }),
         createCell({ text: slot.batch?.branch?.name || "" }),
-        createCell({ text: `${slot.startTime}-${slot.endTime}` }),
+        createCell({ text: `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)}` }),
         createCell({ text: slot.topic || "" })
       ]
     })
@@ -97,7 +98,7 @@ const buildBatchTable = (slots) => {
         createCell({ text: getDay(slot.date) }),
         createCell({ text: slot.teacher?.name || "" }),
         createCell({ text: slot.topic || "" }),
-        createCell({ text: `${slot.startTime}-${slot.endTime}` })
+        createCell({ text: `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)}` })
       ]
     })
   );
@@ -155,7 +156,7 @@ const buildMasterTable = (slots, batches) => {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: `${slot.startTime}-${slot.endTime} ${slot.topic || ""}`,
+                  text: `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)} ${slot.topic || ""}`,
                   size: 18,
                   font: "Arial"
                 })
@@ -190,10 +191,11 @@ const exportTeacherDocx = async (teacherId) => {
   const teacher = await Teacher.findById(teacherId);
   if (!teacher) return null;
 
-  const slots = await TimeSlot.find({ teacher: teacherId })
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find({ teacher: teacherId })
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
 
   const doc = new Document({
     sections: [
@@ -214,10 +216,11 @@ const exportBatchDocx = async (batchId) => {
   const batch = await Batch.findById(batchId).populate("branch");
   if (!batch) return null;
 
-  const slots = await TimeSlot.find({ batch: batchId })
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find({ batch: batchId })
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
 
   const doc = new Document({
     sections: [
@@ -238,10 +241,11 @@ const exportBatchDocx = async (batchId) => {
 };
 
 const exportMasterDocx = async () => {
-  const slots = await TimeSlot.find()
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find()
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
   const batches = await Batch.find().populate("branch").sort({ name: 1 });
   const dateRows = await DateRow.find().sort({ date: 1 });
 
@@ -269,4 +273,4 @@ const exportMasterDocx = async () => {
   return Packer.toBuffer(doc);
 };
 
-module.exports = { exportTeacherDocx, exportBatchDocx, exportMasterDocx };
+export { exportBatchDocx, exportMasterDocx, exportTeacherDocx };

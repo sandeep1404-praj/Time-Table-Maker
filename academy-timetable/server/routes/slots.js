@@ -1,12 +1,17 @@
-const express = require("express");
-const { body, validationResult } = require("express-validator");
-const TimeSlot = require("../models/TimeSlot");
-const { checkAndLogConflicts, findConflicts } = require("../services/conflictService");
-const {
-  deriveSlotStatus,
+import express from "express";
+import { body, validationResult } from "express-validator";
+import TimeSlot from "../models/TimeSlot.js";
+import { checkAndLogConflicts, findConflicts } from "../services/conflictService.js";
+import {
   buildStatusTimestamps,
+  deriveSlotStatus,
   resolveSlotStatusPayload
-} = require("../services/slotStatusService");
+} from "../services/slotStatusService.js";
+import {
+  formatTimeForStorage,
+  parseTimeToMinutes,
+  sortSlotsByDateAndTime
+} from "../utils/time.js";
 
 const router = express.Router();
 
@@ -73,10 +78,11 @@ router.get("/", async (req, res) => {
   } else {
     query.isArchived = { $ne: true };
   }
-  const slots = await TimeSlot.find(query)
-    .populate("teacher")
-    .populate({ path: "batch", populate: { path: "branch" } })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find(query)
+      .populate("teacher")
+      .populate({ path: "batch", populate: { path: "branch" } })
+  );
 
   if (!req.query.archiveId) {
     await syncSlotStatuses(slots);
@@ -89,8 +95,8 @@ router.post(
   "/",
   [
     body("date").isISO8601(),
-    body("startTime").isString().notEmpty(),
-    body("endTime").isString().notEmpty(),
+    body("startTime").custom((value) => parseTimeToMinutes(value) !== null),
+    body("endTime").custom((value) => parseTimeToMinutes(value) !== null),
     body("teacher").optional({ values: "null" }),
     body("batch").isString().notEmpty(),
     body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
@@ -118,6 +124,8 @@ router.post(
     }
 
     const createPayload = normalizeSlotPayload({ ...req.body });
+    createPayload.startTime = formatTimeForStorage(createPayload.startTime);
+    createPayload.endTime = formatTimeForStorage(createPayload.endTime);
     if (createPayload.status !== "canceled") {
       Object.assign(createPayload, resolveSlotStatusPayload(createPayload));
     } else {
@@ -137,8 +145,8 @@ router.put(
   "/:id",
   [
     body("date").optional().isISO8601(),
-    body("startTime").optional().isString().notEmpty(),
-    body("endTime").optional().isString().notEmpty(),
+    body("startTime").optional().custom((value) => parseTimeToMinutes(value) !== null),
+    body("endTime").optional().custom((value) => parseTimeToMinutes(value) !== null),
     body("teacher").optional({ values: "null" }),
     body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
     body("status")
@@ -162,6 +170,12 @@ router.put(
       slotType,
       teacher: slotType === "test" ? null : req.body.teacher ?? existing.teacher
     });
+    if (updatePayload.startTime !== undefined) {
+      updatePayload.startTime = formatTimeForStorage(updatePayload.startTime);
+    }
+    if (updatePayload.endTime !== undefined) {
+      updatePayload.endTime = formatTimeForStorage(updatePayload.endTime);
+    }
 
     if (slotType !== "test" && !updatePayload.teacher) {
       return res.status(400).json({ error: "Teacher is required for non-test slots" });
@@ -231,4 +245,4 @@ router.post("/check-conflict", async (req, res) => {
   res.json({ conflicts });
 });
 
-module.exports = router;
+export default router;

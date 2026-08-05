@@ -1,4 +1,4 @@
-const { parseSlotDateTime, getSlotEndDateTime } = require("../utils/time");
+import { getSlotEndDateTime, parseSlotDateTime } from "../utils/time.js";
 
 const deriveSlotStatus = (slot, now = new Date()) => {
   if (slot.status === "canceled") {
@@ -51,8 +51,4 @@ const resolveSlotStatusPayload = (slotData, now = new Date()) => {
   return buildStatusTimestamps(effectiveStatus, slotData.status || "");
 };
 
-module.exports = {
-  deriveSlotStatus,
-  buildStatusTimestamps,
-  resolveSlotStatusPayload
-};
+export { buildStatusTimestamps, deriveSlotStatus, resolveSlotStatusPayload };

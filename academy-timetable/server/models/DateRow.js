@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const DateRowSchema = new mongoose.Schema(
   {
@@ -9,4 +9,4 @@ const DateRowSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("DateRow", DateRowSchema);
+export default mongoose.model("DateRow", DateRowSchema);

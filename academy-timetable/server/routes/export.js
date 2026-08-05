@@ -1,15 +1,15 @@
-const express = require("express");
-const {
+import express from "express";
+import {
   exportTeacherPdf,
   exportBatchPdf,
   exportAllPdfs,
   exportMasterPdf
-} = require("../services/pdfService");
-const {
+} from "../services/pdfService.js";
+import {
   exportTeacherDocx,
   exportBatchDocx,
   exportMasterDocx
-} = require("../services/docxService");
+} from "../services/docxService.js";
 
 const router = express.Router();
 
@@ -80,4 +80,4 @@ router.get("/all-pdfs", async (req, res) => {
   await exportAllPdfs(res);
 });
 
-module.exports = router;
+export default router;

@@ -5,6 +5,7 @@ import SlotCard from "../components/SlotCard";
 import DateCell from "../components/DateCell";
 import SearchableComboBox from "../components/SearchableComboBox";
 import { getExactTimeOverlapIds } from "../utils/exactTimeOverlap";
+import { formatBatchDisplayName } from "../utils/displayName";
 
 const groupSlotsByDate = (slots, extraDates) => {
   const map = new Map();
@@ -117,8 +118,7 @@ const HistoryPage = () => {
                 <th className="sticky-col timetable-col-date">Date</th>
                 {normalizedBatches.map((batch) => (
                   <th key={batch._id} className="timetable-col-batch">
-                    <div className="batch-header-branch">{batch.branch?.name}</div>
-                    <div className="batch-header-name">{batch.name}</div>
+                    <div className="batch-header-name">{formatBatchDisplayName(batch)}</div>
                   </th>
                 ))}
               </tr>

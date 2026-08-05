@@ -1,10 +1,10 @@
-const express = require("express");
-const Batch = require("../models/Batch");
+import express from "express";
+import Batch from "../models/Batch.js";
 
 const router = express.Router();
 
 router.get("/", async (req, res) => {
-  const batches = await Batch.find().populate("branch").sort({ name: 1 });
+  const batches = await Batch.find().populate("branch");
   res.json(batches);
 });
 
@@ -27,4 +27,4 @@ router.delete("/:id", async (req, res) => {
   res.json({ status: "deleted" });
 });
 
-module.exports = router;
+export default router;

@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const BranchSchema = new mongoose.Schema(
   {
@@ -7,4 +7,4 @@ const BranchSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("Branch", BranchSchema);
+export default mongoose.model("Branch", BranchSchema);

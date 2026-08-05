@@ -1,8 +1,21 @@
-const ConflictLog = require("../models/ConflictLog");
-const Teacher = require("../models/Teacher");
-const TimeSlot = require("../models/TimeSlot");
+import ConflictLog from "../models/ConflictLog.js";
+import Teacher from "../models/Teacher.js";
+import TimeSlot from "../models/TimeSlot.js";
+import { parseTimeToMinutes } from "../utils/time.js";
 
-const hasOverlap = (a, b) => a.startTime < b.endTime && a.endTime > b.startTime;
+const hasOverlap = (a, b) => {
+  const aStart = parseTimeToMinutes(a.startTime);
+  const aEnd = parseTimeToMinutes(a.endTime);
+  const bStart = parseTimeToMinutes(b.startTime);
+  const bEnd = parseTimeToMinutes(b.endTime);
+
+  if ([aStart, aEnd, bStart, bEnd].some((value) => value === null)) {
+    return false;
+  }
+
+  return aStart < bEnd && aEnd > bStart;
+};
+
 const hasExactSameTime = (a, b) => a.startTime === b.startTime && a.endTime === b.endTime;
 
 const getTeacherId = (value) => value?._id || value || null;
@@ -90,4 +103,4 @@ const checkAndLogConflicts = async (newSlot) => {
   return conflicts;
 };
 
-module.exports = { checkAndLogConflicts, findConflicts, hasOverlap };
+export { checkAndLogConflicts, findConflicts, hasOverlap };

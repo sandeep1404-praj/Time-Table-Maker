@@ -49,4 +49,4 @@ const batchTemplate = ({ academyName, batchName, rows }) => `
 </html>
 `;
 
-module.exports = { batchTemplate };
+export { batchTemplate };

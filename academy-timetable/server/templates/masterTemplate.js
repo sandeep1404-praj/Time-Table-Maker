@@ -1,3 +1,5 @@
+import { formatTimeForDisplay } from "../utils/time.js";
+
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 
 const buildRows = (slots, batches) => {
@@ -14,7 +16,10 @@ const buildRows = (slots, batches) => {
           );
           if (!cellSlots.length) return "";
           return cellSlots
-            .map((slot) => `${slot.startTime}-${slot.endTime} ${slot.topic || ""}`)
+            .map(
+              (slot) =>
+                `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)} ${slot.topic || ""}`
+            )
             .join("<br/>");
         })
         .map((cell) => `<td>${cell}</td>`)
@@ -72,4 +77,4 @@ const masterTemplate = ({ academyName, batches, slots }) => `
 </html>
 `;
 
-module.exports = { masterTemplate };
+export { masterTemplate };

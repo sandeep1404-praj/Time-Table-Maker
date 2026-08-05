@@ -3,12 +3,16 @@ import { useTeachers } from "../hooks/useTeachers";
 import { useBatches } from "../hooks/useBatches";
 import { useCreateSlot, useUpdateSlot, useDeleteSlot } from "../hooks/useSlots";
 import { getAllChapterOptions } from "../utils/testProgress";
+import { formatTimeForStorage, splitStoredTime } from "../utils/time";
+import { formatBatchDisplayName } from "../utils/displayName";
 import SearchableComboBox from "./SearchableComboBox";
 
 const emptyForm = {
   date: "",
   startTime: "",
+  startPeriod: "AM",
   endTime: "",
+  endPeriod: "AM",
   batch: "",
   topic: "",
   subject: "",
@@ -33,6 +37,8 @@ const TestSlotModal = ({
 
   const chapterOptions = useMemo(() => getAllChapterOptions(teachers), [teachers]);
   const isEdit = Boolean(slot?._id);
+  const startTimeValue = formatTimeForStorage(form.startTime, form.startPeriod);
+  const endTimeValue = formatTimeForStorage(form.endTime, form.endPeriod);
 
   useEffect(() => {
     if (!slot) {
@@ -47,8 +53,10 @@ const TestSlotModal = ({
 
     setForm({
       date: slot.date?.slice(0, 10) || "",
-      startTime: slot.startTime || "",
-      endTime: slot.endTime || "",
+      startTime: splitStoredTime(slot.startTime).time,
+      startPeriod: splitStoredTime(slot.startTime).period,
+      endTime: splitStoredTime(slot.endTime).time,
+      endPeriod: splitStoredTime(slot.endTime).period,
       batch: slot.batch?._id || slot.batch || "",
       topic: slot.topic || "",
       subject: slot.subject || "",
@@ -72,7 +80,7 @@ const TestSlotModal = ({
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!form.date || !form.startTime || !form.endTime || !form.batch) {
+    if (!form.date || !startTimeValue || !endTimeValue || !form.batch) {
       setError("Date, time, and batch are required.");
       return;
     }
@@ -84,6 +92,8 @@ const TestSlotModal = ({
     setError("");
     const payload = {
       ...form,
+      startTime: startTimeValue,
+      endTime: endTimeValue,
       teacher: null,
       slotType: "test"
     };
@@ -175,27 +185,47 @@ const TestSlotModal = ({
               emptyLabel="Select"
               className="mt-1"
               inputClassName="mt-1 w-full rounded-lg border border-slate-300 p-2"
-              getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+              getOptionLabel={(batch) => formatBatchDisplayName(batch)}
               getOptionValue={(batch) => batch._id}
             />
           </label>
           <label className="text-sm">
             Start
-            <input
-              type="time"
-              value={form.startTime}
-              onChange={(e) => updateField("startTime", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => updateField("startTime", e.target.value)}
+                className="w-full rounded-lg border border-slate-300 p-2"
+              />
+              <select
+                value={form.startPeriod}
+                onChange={(e) => updateField("startPeriod", e.target.value)}
+                className="w-24 rounded-lg border border-slate-300 p-2"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </label>
           <label className="text-sm">
             End
-            <input
-              type="time"
-              value={form.endTime}
-              onChange={(e) => updateField("endTime", e.target.value)}
-              className="mt-1 w-full rounded-lg border border-slate-300 p-2"
-            />
+            <div className="mt-1 flex gap-2">
+              <input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => updateField("endTime", e.target.value)}
+                className="w-full rounded-lg border border-slate-300 p-2"
+              />
+              <select
+                value={form.endPeriod}
+                onChange={(e) => updateField("endPeriod", e.target.value)}
+                className="w-24 rounded-lg border border-slate-300 p-2"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </label>
           <label className="text-sm md:col-span-2">
             Topic

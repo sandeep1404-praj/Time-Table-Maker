@@ -1,5 +1,6 @@
 import { deriveSlotStatus } from "../utils/slotStatus";
 import { getTeacherHighlightStyle } from "../utils/teacherColor";
+import { formatTimeForDisplay } from "../utils/time";
 
 const SlotCard = ({ slot, muted = false, useStoredStatus = false, showOverlapBadge = false }) => {
   const status = useStoredStatus ? slot.status : deriveSlotStatus(slot);
@@ -8,7 +9,7 @@ const SlotCard = ({ slot, muted = false, useStoredStatus = false, showOverlapBad
   return (
     <div className={`slot-card ${muted ? "slot-card--muted" : ""}`}>
       <div className="slot-card__line slot-card__time">
-        {slot.startTime} – {slot.endTime}
+        {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
       </div>
 
       {slot.slotType === "test" ? (

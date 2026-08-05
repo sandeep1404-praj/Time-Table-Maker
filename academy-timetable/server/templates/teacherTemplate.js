@@ -49,4 +49,4 @@ const teacherTemplate = ({ academyName, teacherName, rows }) => `
 </html>
 `;
 
-module.exports = { teacherTemplate };
+export { teacherTemplate };

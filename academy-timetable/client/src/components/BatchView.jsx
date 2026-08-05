@@ -6,6 +6,8 @@ import api from "../api/client";
 import { useState } from "react";
 import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
 import { getTeacherHighlightStyle } from "../utils/teacherColor";
+import { formatTimeForDisplay } from "../utils/time";
+import { formatBatchDisplayName } from "../utils/displayName";
 import SearchableComboBox from "./SearchableComboBox";
 
 const BatchView = () => {
@@ -85,7 +87,7 @@ const BatchView = () => {
                   emptyLabel="Select"
                   className="min-w-[220px]"
                   inputClassName="form-input min-w-[220px]"
-                  getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+                  getOptionLabel={(batch) => formatBatchDisplayName(batch)}
                   getOptionValue={(batch) => batch._id}
                 />
               </div>
@@ -146,7 +148,7 @@ const BatchView = () => {
                   </td>
                   <td className="text-xs font-medium">{slot.topic}</td>
                   <td className="text-xs font-semibold text-slate-800">
-                    {slot.startTime} – {slot.endTime}
+                    {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
                   </td>
                 </tr>
               ))}

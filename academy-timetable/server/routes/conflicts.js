@@ -1,5 +1,5 @@
-const express = require("express");
-const ConflictLog = require("../models/ConflictLog");
+import express from "express";
+import ConflictLog from "../models/ConflictLog.js";
 
 const router = express.Router();
 
@@ -12,4 +12,4 @@ router.get("/", async (req, res) => {
   res.json(conflicts);
 });
 
-module.exports = router;
+export default router;

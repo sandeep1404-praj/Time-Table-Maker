@@ -1,4 +1,5 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
+import { formatTimeForStorage } from "../utils/time.js";
 
 const TimeSlotSchema = new mongoose.Schema(
   {
@@ -35,4 +36,35 @@ const TimeSlotSchema = new mongoose.Schema(
 TimeSlotSchema.index({ teacher: 1, date: 1 });
 TimeSlotSchema.index({ batch: 1, date: 1 });
 
-module.exports = mongoose.model("TimeSlot", TimeSlotSchema);
+const normalizeTimeFields = (target) => {
+  if (!target) return;
+  if (target.startTime !== undefined) {
+    target.startTime = formatTimeForStorage(target.startTime);
+  }
+  if (target.endTime !== undefined) {
+    target.endTime = formatTimeForStorage(target.endTime);
+  }
+};
+
+TimeSlotSchema.pre("validate", function (next) {
+  normalizeTimeFields(this);
+  next();
+});
+
+TimeSlotSchema.pre(["findOneAndUpdate", "updateOne", "updateMany"], function (next) {
+  const update = this.getUpdate() || {};
+  const target = update.$set ? { ...update.$set } : { ...update };
+
+  normalizeTimeFields(target);
+
+  if (update.$set) {
+    update.$set = target;
+  } else {
+    Object.assign(update, target);
+  }
+
+  this.setUpdate(update);
+  next();
+});
+
+export default mongoose.model("TimeSlot", TimeSlotSchema);

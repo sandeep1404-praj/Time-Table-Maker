@@ -4,6 +4,7 @@ import { useTeacherTimetable } from "../hooks/useTimetable";
 import TeacherSearchSelect from "./TeacherSearchSelect";
 import api from "../api/client";
 import { formatDisplayDate, getWeekdayName } from "../utils/dateFormat";
+import { formatTimeForDisplay } from "../utils/time";
 
 const TeacherView = () => {
   const { data: teachers = [] } = useTeachers();
@@ -107,7 +108,7 @@ const TeacherView = () => {
                   </td>
                   <td>{slot.batch?.branch?.name}</td>
                   <td className="text-xs font-semibold text-slate-800">
-                    {slot.startTime} – {slot.endTime}
+                    {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
                   </td>
                   <td className="text-xs font-medium">{slot.topic}</td>
                 </tr>

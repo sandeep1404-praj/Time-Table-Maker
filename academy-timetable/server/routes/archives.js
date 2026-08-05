@@ -1,7 +1,7 @@
-const express = require("express");
-const Archive = require("../models/Archive");
-const DateRow = require("../models/DateRow");
-const TimeSlot = require("../models/TimeSlot");
+import express from "express";
+import Archive from "../models/Archive.js";
+import DateRow from "../models/DateRow.js";
+import TimeSlot from "../models/TimeSlot.js";
 
 const router = express.Router();
 
@@ -42,4 +42,4 @@ router.delete("/:id", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

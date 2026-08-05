@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const ConflictLogSchema = new mongoose.Schema(
   {
@@ -9,4 +9,4 @@ const ConflictLogSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-module.exports = mongoose.model("ConflictLog", ConflictLogSchema);
+export default mongoose.model("ConflictLog", ConflictLogSchema);

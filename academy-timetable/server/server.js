@@ -1,25 +1,25 @@
-const express = require("express");
-const cors = require("cors");
-const dotenv = require("dotenv");
-const { connectDb } = require("./config/db");
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+import { connectDb } from "./config/db.js";
 
-require("./models/Teacher");
-require("./models/Branch");
-require("./models/Batch");
-require("./models/TimeSlot");
-require("./models/ConflictLog");
-require("./models/DateRow");
-require("./models/Archive");
+import "./models/Teacher.js";
+import "./models/Branch.js";
+import "./models/Batch.js";
+import "./models/TimeSlot.js";
+import "./models/ConflictLog.js";
+import "./models/DateRow.js";
+import "./models/Archive.js";
 
-const slotsRouter = require("./routes/slots");
-const teachersRouter = require("./routes/teachers");
-const branchesRouter = require("./routes/branches");
-const batchesRouter = require("./routes/batches");
-const datesRouter = require("./routes/dates");
-const timetableRouter = require("./routes/timetable");
-const conflictsRouter = require("./routes/conflicts");
-const exportRouter = require("./routes/export");
-const archivesRouter = require("./routes/archives");
+import slotsRouter from "./routes/slots.js";
+import teachersRouter from "./routes/teachers.js";
+import branchesRouter from "./routes/branches.js";
+import batchesRouter from "./routes/batches.js";
+import datesRouter from "./routes/dates.js";
+import timetableRouter from "./routes/timetable.js";
+import conflictsRouter from "./routes/conflicts.js";
+import exportRouter from "./routes/export.js";
+import archivesRouter from "./routes/archives.js";
 
 dotenv.config();
 

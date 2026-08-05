@@ -1,5 +1,5 @@
-const express = require("express");
-const Teacher = require("../models/Teacher");
+import express from "express";
+import Teacher from "../models/Teacher.js";
 
 const router = express.Router();
 
@@ -243,4 +243,4 @@ router.patch("/:id/chapters", async (req, res) => {
   res.json(teacher);
 });
 
-module.exports = router;
+export default router;

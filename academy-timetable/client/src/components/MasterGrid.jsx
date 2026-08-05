@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 import { useSlots, useCreateSlot, useUpdateSlot } from "../hooks/useSlots";
 import { useBatches } from "../hooks/useBatches";
 import { useDates, useDeleteDateRow } from "../hooks/useDates";
@@ -6,6 +6,8 @@ import SlotModal from "./SlotModal";
 import SlotCard from "./SlotCard";
 import DateCell from "./DateCell";
 import { getExactTimeOverlapIds } from "../utils/exactTimeOverlap";
+import { formatBatchDisplayName } from "../utils/displayName";
+
 
 const groupSlotsByDate = (slots, extraDates) => {
   const map = new Map();
@@ -45,6 +47,7 @@ const MasterGrid = () => {
   const exactOverlapIds = useMemo(() => getExactTimeOverlapIds(slots), [slots]);
 
   const rowData = useMemo(() => groupSlotsByDate(slots, extraDates), [slots, extraDates]);
+  
 
   const handleCellClick = (date, batchId, slotsInCell) => {
     setActiveCell({
@@ -77,8 +80,17 @@ const MasterGrid = () => {
             <th className="sticky-col timetable-col-date">Date</th>
             {normalizedBatches.map((batch) => (
               <th key={batch._id} className="timetable-col-batch">
-                <div className="batch-header-branch">{batch.branch?.name}</div>
-                <div className="batch-header-name">{batch.name}</div>
+                {/* <div className="batch-header-name">{formatBatchDisplayName(batch)}</div> */}
+                <div className="batch-header-name">
+                  {formatBatchDisplayName(batch)
+                    .split("\n")
+                    .map((line, i) => (
+                      <Fragment key={i}>
+                        {line}
+                        {i < formatBatchDisplayName(batch).split("\n").length - 1 && <br />}
+                      </Fragment>
+                    ))}
+                </div>
               </th>
             ))}
           </tr>

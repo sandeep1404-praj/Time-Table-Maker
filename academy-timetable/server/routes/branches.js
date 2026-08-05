@@ -1,5 +1,5 @@
-const express = require("express");
-const Branch = require("../models/Branch");
+import express from "express";
+import Branch from "../models/Branch.js";
 
 const router = express.Router();
 
@@ -26,4 +26,4 @@ router.delete("/:id", async (req, res) => {
   res.json({ status: "deleted" });
 });
 
-module.exports = router;
+export default router;

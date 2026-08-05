@@ -1,11 +1,12 @@
-const archiver = require("archiver");
-const puppeteer = require("puppeteer");
-const TimeSlot = require("../models/TimeSlot");
-const Teacher = require("../models/Teacher");
-const Batch = require("../models/Batch");
-const { teacherTemplate } = require("../templates/teacherTemplate");
-const { batchTemplate } = require("../templates/batchTemplate");
-const { masterTemplate } = require("../templates/masterTemplate");
+import archiver from "archiver";
+import puppeteer from "puppeteer";
+import TimeSlot from "../models/TimeSlot.js";
+import Teacher from "../models/Teacher.js";
+import Batch from "../models/Batch.js";
+import { teacherTemplate } from "../templates/teacherTemplate.js";
+import { batchTemplate } from "../templates/batchTemplate.js";
+import { masterTemplate } from "../templates/masterTemplate.js";
+import { sortSlotsByDateAndTime } from "../utils/time.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 const getDay = (date) => new Date(date).toLocaleDateString("en-IN", { weekday: "short" });
@@ -41,10 +42,11 @@ const exportTeacherPdf = async (teacherId) => {
   const teacher = await Teacher.findById(teacherId);
   if (!teacher) return null;
 
-  const slots = await TimeSlot.find({ teacher: teacherId })
-    .populate({ path: "batch", populate: "branch" })
-    .populate("teacher")
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find({ teacher: teacherId })
+      .populate({ path: "batch", populate: "branch" })
+      .populate("teacher")
+  );
 
   const html = teacherTemplate({
     academyName: "Guru Aanklan Academy",
@@ -59,10 +61,11 @@ const exportBatchPdf = async (batchId) => {
   const batch = await Batch.findById(batchId).populate("branch");
   if (!batch) return null;
 
-  const slots = await TimeSlot.find({ batch: batchId })
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find({ batch: batchId })
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
 
   const html = batchTemplate({
     academyName: "Guru Aanklan Academy",
@@ -98,10 +101,11 @@ const exportAllPdfs = async (res) => {
 };
 
 const exportMasterPdf = async () => {
-  const slots = await TimeSlot.find()
-    .populate("teacher")
-    .populate({ path: "batch", populate: "branch" })
-    .sort({ date: 1, startTime: 1 });
+  const slots = sortSlotsByDateAndTime(
+    await TimeSlot.find()
+      .populate("teacher")
+      .populate({ path: "batch", populate: "branch" })
+  );
   const batches = await Batch.find().populate("branch").sort({ name: 1 });
 
   const html = masterTemplate({
@@ -113,4 +117,4 @@ const exportMasterPdf = async () => {
   return renderPdfBuffer(html);
 };
 
-module.exports = { exportTeacherPdf, exportBatchPdf, exportAllPdfs, exportMasterPdf };
+export { exportAllPdfs, exportBatchPdf, exportMasterPdf, exportTeacherPdf };

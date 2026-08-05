@@ -13,6 +13,7 @@ import {
 import { useEffect, useState } from "react";
 import TeacherSearchSelect from "../components/TeacherSearchSelect";
 import ChapterCompletionModal from "../components/ChapterCompletionModal";
+import { formatBatchDisplayName } from "../utils/displayName";
 
 const ManagePage = () => {
   const { data: branches = [] } = useBranches();
@@ -429,7 +430,7 @@ const ManagePage = () => {
                 {batches.map((batch) => (
                   <div key={batch._id} className="flex items-center justify-between rounded bg-white px-2 py-2">
                     <span className="text-sm font-medium text-slate-700">
-                      {batch.branch?.name} {batch.name}
+                      {formatBatchDisplayName(batch)}
                     </span>
                     <button
                       type="button"

@@ -10,6 +10,8 @@ import {
   getDurationHoursFromTimes
 } from "../utils/chapterProgress";
 import { getAllChapterOptions } from "../utils/testProgress";
+import { formatTimeForDisplay, formatTimeForStorage, splitStoredTime } from "../utils/time";
+import { formatBatchDisplayName } from "../utils/displayName";
 import TeacherSearchSelect from "./TeacherSearchSelect";
 import SearchableComboBox from "./SearchableComboBox";
 
@@ -27,7 +29,9 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
     () => ({
       date: initialData?.date || "",
       startTime: "",
+      startPeriod: "AM",
       endTime: "",
+      endPeriod: "AM",
       teacher: "",
       batch: initialData?.batch || "",
       topic: "",
@@ -49,10 +53,15 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
   const existingSlots = initialData?.slots || [];
 
   const hydrateFromSlot = (slot) => {
+    const startTime = splitStoredTime(slot.startTime);
+    const endTime = splitStoredTime(slot.endTime);
+
     setForm({
       date: slot.date?.slice(0, 10) || "",
-      startTime: slot.startTime || "",
-      endTime: slot.endTime || "",
+      startTime: startTime.time,
+      startPeriod: startTime.period,
+      endTime: endTime.time,
+      endPeriod: endTime.period,
       teacher: slot.teacher?._id || slot.teacher || "",
       batch: slot.batch?._id || slot.batch || initialData?.batch || "",
       topic: slot.topic || "",
@@ -72,6 +81,8 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
   const isTestSlot = form.slotType === "test";
   const allChapterOptions = useMemo(() => getAllChapterOptions(teachers), [teachers]);
   const chapterOptions = isTestSlot ? allChapterOptions : teacherChapters;
+  const startTimeValue = formatTimeForStorage(form.startTime, form.startPeriod);
+  const endTimeValue = formatTimeForStorage(form.endTime, form.endPeriod);
 
   const selectedBatch = batches.find((item) => item._id === form.batch);
   const selectedBranchName = selectedBatch?.branch?.name;
@@ -81,11 +92,11 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
     () =>
       deriveSlotStatus({
         date: form.date,
-        startTime: form.startTime,
-        endTime: form.endTime,
+        startTime: startTimeValue,
+        endTime: endTimeValue,
         status: form.isCanceled ? "canceled" : "scheduled"
       }),
-    [form.date, form.startTime, form.endTime, form.isCanceled]
+    [form.date, startTimeValue, endTimeValue, form.isCanceled]
   );
 
   const chapterProgressHours = useMemo(() => {
@@ -101,8 +112,8 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       excludeSlotId: selectedSlotId || null
     });
 
-    if (form.startTime && form.endTime && !form.isCanceled && autoStatus === "completed") {
-      total += getDurationHoursFromTimes(form.startTime, form.endTime);
+    if (startTimeValue && endTimeValue && !form.isCanceled && autoStatus === "completed") {
+      total += getDurationHoursFromTimes(startTimeValue, endTimeValue);
     }
 
     return total;
@@ -113,8 +124,8 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
     form.teacher,
     form.chapterNumber,
     form.batch,
-    form.startTime,
-    form.endTime,
+    startTimeValue,
+    endTimeValue,
     form.isCanceled,
     autoStatus,
     selectedSlotId
@@ -169,7 +180,7 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
 
   const handleSubmit = (event) => {
     event.preventDefault();
-    if (!form.date || !form.startTime || !form.endTime || !form.batch) {
+    if (!form.date || !startTimeValue || !endTimeValue || !form.batch) {
       setSlotError("Please fill date, time, and batch before saving.");
       return;
     }
@@ -191,6 +202,8 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       {
         ...rest,
         teacher: isTestSlot ? null : teacher,
+        startTime: startTimeValue,
+        endTime: endTimeValue,
         status: isCanceled ? "canceled" : autoStatus
       },
       selectedSlotId || null
@@ -255,8 +268,8 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
                 {conflicts.map((conflict) => (
                   <li key={`${conflict.type}-${conflict.slot?._id}`}>
                     {conflict.type === "teacher" ? "Teacher" : "Batch"} overlap: {" "}
-                    {conflict.slot?.date?.slice(0, 10)} {conflict.slot?.startTime}-
-                    {conflict.slot?.endTime} | {conflict.slot?.teacher?.name || ""} | {" "}
+                    {conflict.slot?.date?.slice(0, 10)} {formatTimeForDisplay(conflict.slot?.startTime)}-
+                    {formatTimeForDisplay(conflict.slot?.endTime)} | {conflict.slot?.teacher?.name || ""} | {" "}
                     {conflict.slot?.batch?.branch?.name || ""} {conflict.slot?.batch?.name || ""}
                   </li>
                 ))}
@@ -276,7 +289,7 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
                 <option value="">Create new slot</option>
                 {existingSlots.map((slot) => (
                   <option key={slot._id} value={slot._id}>
-                    {slot.startTime}-{slot.endTime} {slot.topic || "(no topic)"}
+                    {formatTimeForDisplay(slot.startTime)}-{formatTimeForDisplay(slot.endTime)} {slot.topic || "(no topic)"}
                   </option>
                 ))}
               </select>
@@ -364,27 +377,47 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
               placeholder="Search batch..."
               emptyLabel="Select"
               inputClassName="form-input"
-              getOptionLabel={(batch) => `${batch.branch?.name || ""} ${batch.name}`.trim()}
+              getOptionLabel={(batch) => formatBatchDisplayName(batch)}
               getOptionValue={(batch) => batch._id}
             />
           </label>
           <label>
             <span className="form-label">Start Time</span>
-            <input
-              type="time"
-              value={form.startTime}
-              onChange={(e) => updateField("startTime", e.target.value)}
-              className="form-input"
-            />
+            <div className="flex gap-2">
+              <input
+                type="time"
+                value={form.startTime}
+                onChange={(e) => updateField("startTime", e.target.value)}
+                className="form-input"
+              />
+              <select
+                value={form.startPeriod}
+                onChange={(e) => updateField("startPeriod", e.target.value)}
+                className="form-select w-24"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </label>
           <label>
             <span className="form-label">End Time</span>
-            <input
-              type="time"
-              value={form.endTime}
-              onChange={(e) => updateField("endTime", e.target.value)}
-              className="form-input"
-            />
+            <div className="flex gap-2">
+              <input
+                type="time"
+                value={form.endTime}
+                onChange={(e) => updateField("endTime", e.target.value)}
+                className="form-input"
+              />
+              <select
+                value={form.endPeriod}
+                onChange={(e) => updateField("endPeriod", e.target.value)}
+                className="form-select w-24"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
           </label>
           <label>
             <span className="form-label">Topic</span>
