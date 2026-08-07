@@ -12,6 +12,17 @@ const TeacherView = () => {
   const setSelectedTeacherId = useTimetableStore((state) => state.setSelectedTeacherId);
   const { data: slots = [] } = useTeacherTimetable(selectedTeacherId);
 
+  const selectedTeacher = teachers.find((t) => t._id === selectedTeacherId);
+  const getChapterDisplay = (slot) => {
+    if (!slot.chapterNumber) return "—";
+    const chapter = selectedTeacher?.chapters?.find(
+      (ch) => String(ch.chapterNumber) === String(slot.chapterNumber)
+    );
+    return chapter?.title
+      ? `Ch. ${slot.chapterNumber} – ${chapter.title}`
+      : `Ch. ${slot.chapterNumber}`;
+  };
+
   const downloadDocx = async () => {
     if (!selectedTeacherId) return;
     const response = await api.get(`/api/export/teacher/${selectedTeacherId}/docx`, {
@@ -87,36 +98,60 @@ const TeacherView = () => {
           <p className="font-semibold text-slate-700">No schedule to display</p>
           <p className="mt-1 text-sm text-slate-500">Select a teacher to view their timetable.</p>
         </div>
-      ) : (
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Day</th>
-                <th>Branch</th>
-                <th>Time</th>
-                <th>Topic</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slots.map((slot) => (
-                <tr key={slot._id}>
-                  <td className="font-medium">{formatDisplayDate(slot.date)}</td>
-                  <td>
-                    <span className="day-badge">{getWeekdayName(slot.date)}</span>
-                  </td>
-                  <td>{slot.batch?.branch?.name}</td>
-                  <td className="text-xs font-semibold text-slate-800">
-                    {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
-                  </td>
-                  <td className="text-xs font-medium">{slot.topic}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      ) : (() => {
+          const groups = [];
+          const seen = new Map();
+          slots.forEach((slot) => {
+            const key = slot.date?.slice(0, 10) ?? slot.date;
+            if (!seen.has(key)) {
+              seen.set(key, []);
+              groups.push({ key, slots: seen.get(key) });
+            }
+            seen.get(key).push(slot);
+          });
+
+          return (
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Branch</th>
+                    <th>Chapter</th>
+                    <th>Time</th>
+                    <th>Topic</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.flatMap(({ slots: groupSlots }) =>
+                    groupSlots.map((slot, idx) => (
+                      <tr key={slot._id}>
+                        {idx === 0 && (
+                          <>
+                            <td className="font-medium align-top" rowSpan={groupSlots.length}>
+                              {formatDisplayDate(slot.date)}
+                            </td>
+                            <td className="align-top" rowSpan={groupSlots.length}>
+                              <span className="day-badge">{getWeekdayName(slot.date)}</span>
+                            </td>
+                          </>
+                        )}
+                        <td>{slot.batch?.branch?.name}</td>
+                        <td className="text-xs font-medium">{getChapterDisplay(slot)}</td>
+                        <td className="text-xs font-semibold text-slate-800">
+                          {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
+                        </td>
+                        <td className="text-xs font-medium">{slot.topic}</td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()
+      }
     </div>
   );
 };

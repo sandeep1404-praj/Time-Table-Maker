@@ -272,6 +272,10 @@
     @apply ml-1 inline-flex rounded-full border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700;
   }
 
+  .slot-card__mcq-badge {
+    @apply ml-1 inline-flex rounded-full border border-violet-200 bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-violet-700;
+  }
+
   .modal-overlay {
     @apply fixed inset-0 z-[80] flex items-start justify-center overflow-y-auto bg-slate-900/45 p-4 backdrop-blur-sm;
   }

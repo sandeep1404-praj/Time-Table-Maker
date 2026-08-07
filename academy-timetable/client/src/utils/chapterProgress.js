@@ -12,7 +12,7 @@ export { getSlotDurationHours, parseTimeToMinutes };
 export const getDurationHoursFromTimes = (startTime, endTime) =>
   getSlotDurationMinutes(startTime, endTime) / 60;
 
-const isLectureSlot = (slot) => !slot.slotType || slot.slotType === "lecture";
+const isLectureSlot = (slot) => !slot.slotType || slot.slotType === "lecture" || slot.slotType === "lecture-theory" || slot.slotType === "lecture-mcq";
 
 export const getBatchBranchId = (batch) => {
   if (!batch?.branch) return null;

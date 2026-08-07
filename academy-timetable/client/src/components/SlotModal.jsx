@@ -37,7 +37,7 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       topic: "",
       subject: "",
       chapterNumber: "",
-      slotType: "lecture",
+      slotType: "lecture-theory",
       isCanceled: false,
       cancelNote: "",
       notes: ""
@@ -67,7 +67,7 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
       topic: slot.topic || "",
       subject: slot.subject || "",
       chapterNumber: slot.chapterNumber || "",
-      slotType: slot.slotType || "lecture",
+      slotType: slot.slotType === "lecture" ? "lecture-theory" : (slot.slotType || "lecture-theory"),
       isCanceled: slot.status === "canceled",
       cancelNote: slot.cancelNote || "",
       notes: slot.notes || ""
@@ -435,9 +435,9 @@ const SlotModal = ({ initialData, onClose, onSave }) => {
               onChange={(e) => handleSlotTypeChange(e.target.value)}
               className="form-select"
             >
-              <option value="lecture">Lecture</option>
+              <option value="lecture-theory">Lecture (Theory)</option>
+              <option value="lecture-mcq">Lecture (MCQ)</option>
               <option value="test">Test</option>
-              <option value="mcq">MCQ</option>
               <option value="revision">Revision</option>
               <option value="coverup">Coverup (Legacy)</option>
             </select>

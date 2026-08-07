@@ -119,43 +119,101 @@ const BatchView = () => {
           <p className="font-semibold text-slate-700">No schedule to display</p>
           <p className="mt-1 text-sm text-slate-500">Select a batch to view its timetable.</p>
         </div>
-      ) : (
-        <div className="data-table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Day</th>
-                <th>Faculty</th>
-                <th>Chapter</th>
-                <th>Time</th>
-              </tr>
-            </thead>
-            <tbody>
-              {slots.map((slot) => (
-                <tr key={slot._id}>
-                  <td className="font-medium">{formatDisplayDate(slot.date)}</td>
-                  <td>
-                    <span className="day-badge">{getWeekdayName(slot.date)}</span>
-                  </td>
-                  <td>
-                    <span
-                      className="inline-block rounded-md border px-2 py-0.5 text-xs font-semibold"
-                      style={getTeacherHighlightStyle(slot.teacher?.color)}
-                    >
-                      {slot.teacher?.name}
-                    </span>
-                  </td>
-                  <td className="text-xs font-medium">{slot.topic}</td>
-                  <td className="text-xs font-semibold text-slate-800">
-                    {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      ) : (() => {
+          // Group slots by date key preserving order
+          const groups = [];
+          const seen = new Map();
+          slots.forEach((slot) => {
+            const key = slot.date?.slice(0, 10) ?? slot.date;
+            if (!seen.has(key)) {
+              seen.set(key, []);
+              groups.push({ key, slots: seen.get(key) });
+            }
+            seen.get(key).push(slot);
+          });
+
+          const SLOT_TYPE_LABEL = {
+            "lecture": "Lecture (Theory)",
+            "lecture-theory": "Lecture (Theory)",
+            "lecture-mcq": "Lecture (MCQ)",
+            "test": "Test",
+            "mcq": "MCQ",
+            "revision": "Revision",
+            "coverup": "Coverup"
+          };
+
+          return (
+            <div className="data-table-wrap">
+              <table className="data-table">
+                <thead>
+                  <tr>
+                    <th>Date</th>
+                    <th>Day</th>
+                    <th>Faculty</th>
+                    <th>Chapter</th>
+                    <th>Time</th>
+                    <th>Type</th>
+                    <th>Topic</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {groups.flatMap(({ key, slots: groupSlots }) =>
+                    groupSlots.map((slot, idx) => {
+                      const chapter = slot.teacher?.chapters?.find(
+                        (ch) => String(ch.chapterNumber) === String(slot.chapterNumber)
+                      );
+                      const chapterDisplay = slot.chapterNumber
+                        ? chapter?.title
+                          ? `Ch. ${slot.chapterNumber} – ${chapter.title}`
+                          : `Ch. ${slot.chapterNumber}`
+                        : "—";
+
+                      return (
+                        <tr key={slot._id}>
+                          {idx === 0 && (
+                            <>
+                              <td className="font-medium align-top" rowSpan={groupSlots.length}>
+                                {formatDisplayDate(slot.date)}
+                              </td>
+                              <td className="align-top" rowSpan={groupSlots.length}>
+                                <span className="day-badge">{getWeekdayName(slot.date)}</span>
+                              </td>
+                            </>
+                          )}
+                          <td>
+                            <span
+                              className="inline-block rounded-md border px-2 py-0.5 text-xs font-semibold"
+                              style={getTeacherHighlightStyle(slot.teacher?.color)}
+                            >
+                              {slot.teacher?.name}
+                            </span>
+                          </td>
+                          <td className="text-xs font-medium">{chapterDisplay}</td>
+                          <td className="text-xs font-semibold text-slate-800">
+                            {formatTimeForDisplay(slot.startTime)} – {formatTimeForDisplay(slot.endTime)}
+                          </td>
+                          <td className="text-xs font-medium">
+                            <span className={`inline-block rounded-md px-2 py-0.5 font-semibold ${
+                              slot.slotType === "test" ? "bg-red-50 text-red-700"
+                                : slot.slotType === "lecture-mcq" ? "bg-violet-50 text-violet-700"
+                                : slot.slotType === "revision" ? "bg-amber-50 text-amber-700"
+                                : slot.slotType === "coverup" ? "bg-slate-100 text-slate-600"
+                                : "bg-sky-50 text-sky-700"
+                            }`}>
+                              {SLOT_TYPE_LABEL[slot.slotType] || slot.slotType || "Lecture (Theory)"}
+                            </span>
+                          </td>
+                          <td className="text-xs font-medium">{slot.topic}</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          );
+        })()
+      }
     </div>
   );
 };

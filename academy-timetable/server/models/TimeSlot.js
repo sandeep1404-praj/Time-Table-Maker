@@ -13,8 +13,8 @@ const TimeSlotSchema = new mongoose.Schema(
     chapterNumber: { type: String, default: "" },
     slotType: {
       type: String,
-      enum: ["lecture", "test", "mcq", "revision", "coverup"],
-      default: "lecture"
+      enum: ["lecture", "lecture-theory", "lecture-mcq", "test", "mcq", "revision", "coverup"],
+      default: "lecture-theory"
     },
     status: {
       type: String,

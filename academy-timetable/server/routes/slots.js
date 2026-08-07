@@ -99,7 +99,7 @@ router.post(
     body("endTime").custom((value) => parseTimeToMinutes(value) !== null),
     body("teacher").optional({ values: "null" }),
     body("batch").isString().notEmpty(),
-    body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
+    body("slotType").optional().isIn(["lecture", "lecture-theory", "lecture-mcq", "test", "mcq", "revision", "coverup"]),
     body("status")
       .optional()
       .isIn(["scheduled", "ongoing", "completed", "canceled"])
@@ -148,7 +148,7 @@ router.put(
     body("startTime").optional().custom((value) => parseTimeToMinutes(value) !== null),
     body("endTime").optional().custom((value) => parseTimeToMinutes(value) !== null),
     body("teacher").optional({ values: "null" }),
-    body("slotType").optional().isIn(["lecture", "test", "mcq", "revision", "coverup"]),
+    body("slotType").optional().isIn(["lecture", "lecture-theory", "lecture-mcq", "test", "mcq", "revision", "coverup"]),
     body("status")
       .optional()
       .isIn(["scheduled", "ongoing", "completed", "canceled"])

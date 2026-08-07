@@ -22,6 +22,9 @@ const SlotCard = ({ slot, muted = false, useStoredStatus = false, showOverlapBad
           style={getTeacherHighlightStyle(teacherColor)}
         >
           <span className="mr-1">{slot.teacher?.name || "—"}</span>
+          {slot.slotType === "lecture-mcq" && (
+            <span className="slot-card__mcq-badge">MCQ</span>
+          )}
           {showOverlapBadge && slot.teacher?.allowScheduleOverlap ? (
             <span className="slot-card__teacher-overlap">Overlap</span>
           ) : null}
