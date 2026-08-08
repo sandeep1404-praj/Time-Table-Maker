@@ -21,90 +21,146 @@ import DateRow from "../models/DateRow.js";
 import { formatTimeForDisplay, sortSlotsByDateAndTime } from "../utils/time.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
-const getDay = (date) => new Date(date).toLocaleDateString("en-IN", { weekday: "short" });
+const getDayFull = (date) =>
+  new Date(date).toLocaleDateString("en-IN", { weekday: "long" });
+const formatDisplayDate = (dateStr) => {
+  const [y, m, d] = dateStr.split("-");
+  return `${d}-${m}-${y}`;
+};
 
-const createCell = ({
-  text = "",
-  bold = false,
-  shading = null,
-  align = AlignmentType.LEFT,
-  fontSize = 18,
-  paragraphs = null
-}) =>
+const BT_CELL_BORDERS = {
+  top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+  bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+  left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+  right: { style: BorderStyle.SINGLE, size: 1, color: "000000" }
+};
+
+const SLOT_TYPE_LABEL = {
+  "lecture": "Lecture (Theory)",
+  "lecture-theory": "Lecture (Theory)",
+  "lecture-mcq": "Lecture (MCQ)",
+  "test": "Test",
+  "mcq": "MCQ",
+  "revision": "Revision",
+  "coverup": "Coverup"
+};
+
+const btCell = (text, { bold = false, shading = null, fontSize = 18, align = AlignmentType.CENTER, rowSpan = undefined } = {}) =>
   new TableCell({
-    borders: cellBorders,
+    borders: BT_CELL_BORDERS,
     verticalAlign: VerticalAlign.CENTER,
-    margins: { top: 120, bottom: 120, left: 120, right: 120 },
-    shading: shading
-      ? { type: ShadingType.CLEAR, color: "auto", fill: shading }
-      : undefined,
-    children:
-      paragraphs || [
-        new Paragraph({
-          alignment: align,
-          children: [new TextRun({ text: String(text), bold, size: fontSize, font: "Arial" })]
-        })
-      ]
-  });
-
-const cellBorders = {
-  top: { style: BorderStyle.SINGLE, size: 1, color: "CFCFCF" },
-  bottom: { style: BorderStyle.SINGLE, size: 1, color: "CFCFCF" },
-  left: { style: BorderStyle.SINGLE, size: 1, color: "CFCFCF" },
-  right: { style: BorderStyle.SINGLE, size: 1, color: "CFCFCF" }
-};
-
-const buildTeacherTable = (slots) => {
-  const header = new TableRow({
+    margins: { top: 60, bottom: 60, left: 80, right: 80 },
+    rowSpan,
+    shading: shading ? { type: ShadingType.CLEAR, color: "auto", fill: shading } : undefined,
     children: [
-      createCell({ text: "Date", bold: true }),
-      createCell({ text: "Day", bold: true }),
-      createCell({ text: "Branch", bold: true }),
-      createCell({ text: "Time", bold: true }),
-      createCell({ text: "Topic", bold: true })
+      new Paragraph({
+        alignment: align,
+        children: [new TextRun({ text: String(text), bold, size: fontSize, font: "Calibri" })]
+      })
     ]
   });
 
-  const rows = slots.map((slot) =>
-    new TableRow({
-      children: [
-        createCell({ text: formatDate(slot.date) }),
-        createCell({ text: getDay(slot.date) }),
-        createCell({ text: slot.batch?.branch?.name || "" }),
-        createCell({ text: `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)}` }),
-        createCell({ text: slot.topic || "" })
-      ]
-    })
-  );
-
-  return new Table({ rows: [header, ...rows] });
-};
-
+// --- BATCH TABLE ---
 const buildBatchTable = (slots) => {
+  const HEADER_SHADING = "FFD600"; // Yellow
+
   const header = new TableRow({
     children: [
-      createCell({ text: "Date", bold: true }),
-      createCell({ text: "Day", bold: true }),
-      createCell({ text: "Faculty", bold: true }),
-      createCell({ text: "Chapter", bold: true }),
-      createCell({ text: "Time", bold: true })
+      btCell("Date", { bold: true, shading: HEADER_SHADING }),
+      btCell("Day", { bold: true, shading: HEADER_SHADING }),
+      btCell("Faculty", { bold: true, shading: HEADER_SHADING }),
+      btCell("Chapter", { bold: true, shading: HEADER_SHADING }),
+      btCell("Time", { bold: true, shading: HEADER_SHADING }),
+      btCell("Type", { bold: true, shading: HEADER_SHADING }),
+      btCell("Topic", { bold: true, shading: HEADER_SHADING })
     ]
   });
 
-  const rows = slots.map((slot) =>
-    new TableRow({
-      children: [
-        createCell({ text: formatDate(slot.date) }),
-        createCell({ text: getDay(slot.date) }),
-        createCell({ text: slot.teacher?.name || "" }),
-        createCell({ text: slot.topic || "" }),
-        createCell({ text: `${formatTimeForDisplay(slot.startTime)}-${formatTimeForDisplay(slot.endTime)}` })
-      ]
+  // Group by date
+  const groups = [];
+  const seen = new Map();
+  slots.forEach((slot) => {
+    const key = formatDate(slot.date);
+    if (!seen.has(key)) { seen.set(key, []); groups.push({ key, slots: seen.get(key) }); }
+    seen.get(key).push(slot);
+  });
+
+  const rows = groups.flatMap(({ key, slots: groupSlots }) =>
+    groupSlots.map((slot, idx) => {
+      const chapter = (() => {
+        if (!slot.chapterNumber) return "—";
+        const ch = slot.teacher?.chapters?.find(
+          (c) => String(c.chapterNumber) === String(slot.chapterNumber)
+        );
+        return ch?.title ? `Ch. ${slot.chapterNumber} – ${ch.title}` : `Ch. ${slot.chapterNumber}`;
+      })();
+      const typeLabel = SLOT_TYPE_LABEL[slot.slotType] || slot.slotType || "Lecture (Theory)";
+      const timeStr = `${formatTimeForDisplay(slot.startTime)} to ${formatTimeForDisplay(slot.endTime)}`;
+
+      const cells = [];
+      if (idx === 0) {
+        cells.push(btCell(formatDisplayDate(key), { bold: true, rowSpan: groupSlots.length }));
+        cells.push(btCell(getDayFull(key), { bold: true, rowSpan: groupSlots.length }));
+      }
+      cells.push(btCell(slot.teacher?.name || ""));
+      cells.push(btCell(chapter, { align: AlignmentType.LEFT }));
+      cells.push(btCell(timeStr));
+      cells.push(btCell(typeLabel));
+      cells.push(btCell(slot.topic || "", { align: AlignmentType.LEFT }));
+
+      return new TableRow({ children: cells });
     })
   );
 
-  return new Table({ rows: [header, ...rows] });
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [header, ...rows]
+  });
 };
+
+// --- TEACHER TABLE ---
+const buildTeacherTable = (slots) => {
+  const HEADER_SHADING = "FFD600";
+
+  const header = new TableRow({
+    children: [
+      btCell("Date", { bold: true, shading: HEADER_SHADING }),
+      btCell("Day", { bold: true, shading: HEADER_SHADING }),
+      btCell("Branch", { bold: true, shading: HEADER_SHADING }),
+      btCell("Topic", { bold: true, shading: HEADER_SHADING }),
+      btCell("Time", { bold: true, shading: HEADER_SHADING })
+    ]
+  });
+
+  const groups = [];
+  const seen = new Map();
+  slots.forEach((slot) => {
+    const key = formatDate(slot.date);
+    if (!seen.has(key)) { seen.set(key, []); groups.push({ key, slots: seen.get(key) }); }
+    seen.get(key).push(slot);
+  });
+
+  const rows = groups.flatMap(({ key, slots: groupSlots }) =>
+    groupSlots.map((slot, idx) => {
+      const timeStr = `${formatTimeForDisplay(slot.startTime)} to ${formatTimeForDisplay(slot.endTime)}`;
+      const cells = [];
+      if (idx === 0) {
+        cells.push(btCell(formatDisplayDate(key), { bold: true, rowSpan: groupSlots.length }));
+        cells.push(btCell(getDayFull(key), { bold: true, rowSpan: groupSlots.length }));
+      }
+      cells.push(btCell(slot.batch?.branch?.name || ""));
+      cells.push(btCell(slot.topic || "", { align: AlignmentType.LEFT }));
+      cells.push(btCell(timeStr));
+      return new TableRow({ children: cells });
+    })
+  );
+
+  return new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE },
+    rows: [header, ...rows]
+  });
+};
+
 
 const THIN_BORDER = { style: BorderStyle.SINGLE, size: 1, color: "000000" };
 const CELL_BORDERS_THIN = {
@@ -277,8 +333,17 @@ const exportTeacherDocx = async (teacherId) => {
     sections: [
       {
         children: [
-          new Paragraph({ text: "Guru Aanklan Academy", heading: "Heading1" }),
-          new Paragraph({ text: `${teacher.name} - Weekly Timetable`, heading: "Heading2" }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+            children: [new TextRun({ text: "Guru Aanklan Academy", bold: true, size: 28, font: "Calibri" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            shading: { type: ShadingType.CLEAR, color: "auto", fill: "39BEF0" },
+            children: [new TextRun({ text: teacher.name, bold: true, size: 24, font: "Calibri", color: "FFFFFF" })]
+          }),
           buildTeacherTable(slots)
         ]
       }
@@ -298,14 +363,21 @@ const exportBatchDocx = async (batchId) => {
       .populate({ path: "batch", populate: "branch" })
   );
 
+  const batchTitle = `${batch.branch?.name || ""} ${batch.name}`;
   const doc = new Document({
     sections: [
       {
         children: [
-          new Paragraph({ text: "Guru Aanklan Academy", heading: "Heading1" }),
           new Paragraph({
-            text: `${batch.branch?.name || ""} ${batch.name} - Weekly Timetable`,
-            heading: "Heading2"
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 100 },
+            children: [new TextRun({ text: "Guru Aanklan Academy", bold: true, size: 28, font: "Calibri" })]
+          }),
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            spacing: { after: 200 },
+            shading: { type: ShadingType.CLEAR, color: "auto", fill: "39BEF0" },
+            children: [new TextRun({ text: batchTitle, bold: true, size: 24, font: "Calibri", color: "FFFFFF" })]
           }),
           buildBatchTable(slots)
         ]

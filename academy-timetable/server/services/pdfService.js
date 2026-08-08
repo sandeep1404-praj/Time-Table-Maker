@@ -3,37 +3,30 @@ import puppeteer from "puppeteer";
 import TimeSlot from "../models/TimeSlot.js";
 import Teacher from "../models/Teacher.js";
 import Batch from "../models/Batch.js";
+import DateRow from "../models/DateRow.js";
 import { teacherTemplate } from "../templates/teacherTemplate.js";
 import { batchTemplate } from "../templates/batchTemplate.js";
 import { masterTemplate } from "../templates/masterTemplate.js";
 import { sortSlotsByDateAndTime } from "../utils/time.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
-const getDay = (date) => new Date(date).toLocaleDateString("en-IN", { weekday: "short" });
 
-const buildTeacherRows = (slots) =>
-  slots.map((slot) => ({
-    date: formatDate(slot.date),
-    day: getDay(slot.date),
-    branch: slot.batch?.branch?.name || "",
-    time: `${slot.startTime}-${slot.endTime}`,
-    topic: slot.topic || ""
-  }));
-
-const buildBatchRows = (slots) =>
-  slots.map((slot) => ({
-    date: formatDate(slot.date),
-    day: getDay(slot.date),
-    faculty: slot.teacher?.name || "",
-    chapter: slot.topic || "",
-    time: `${slot.startTime}-${slot.endTime}`
-  }));
-
-const renderPdfBuffer = async (html) => {
-  const browser = await puppeteer.launch({ headless: "new" });
+const renderPdfBuffer = async (html, landscape = false) => {
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+  });
   const page = await browser.newPage();
-  await page.setContent(html, { waitUntil: "networkidle0" });
-  const buffer = await page.pdf({ format: "A4", printBackground: true });
+  page.setDefaultNavigationTimeout(60000);
+  await page.setContent(html, { waitUntil: "domcontentloaded" });
+  const buffer = await page.pdf({
+    width: landscape ? "420mm" : undefined,
+    height: landscape ? "297mm" : undefined,
+    format: landscape ? undefined : "A4",
+    landscape,
+    printBackground: true,
+    margin: landscape ? { top: "4mm", bottom: "4mm", left: "4mm", right: "4mm" } : undefined
+  });
   await browser.close();
   return buffer;
 };
@@ -49,9 +42,8 @@ const exportTeacherPdf = async (teacherId) => {
   );
 
   const html = teacherTemplate({
-    academyName: "Guru Aanklan Academy",
     teacherName: teacher.name,
-    rows: buildTeacherRows(slots)
+    slots
   });
 
   return renderPdfBuffer(html);
@@ -68,9 +60,8 @@ const exportBatchPdf = async (batchId) => {
   );
 
   const html = batchTemplate({
-    academyName: "Guru Aanklan Academy",
-    batchName: `${batch.branch.name} ${batch.name}`,
-    rows: buildBatchRows(slots)
+    batchName: `${batch.branch?.name || ""} ${batch.name}`,
+    slots
   });
 
   return renderPdfBuffer(html);
@@ -102,19 +93,19 @@ const exportAllPdfs = async (res) => {
 
 const exportMasterPdf = async () => {
   const slots = sortSlotsByDateAndTime(
-    await TimeSlot.find()
+    await TimeSlot.find({ isArchived: { $ne: true } })
       .populate("teacher")
       .populate({ path: "batch", populate: "branch" })
   );
-  const batches = await Batch.find().populate("branch").sort({ name: 1 });
+  // DB insertion order (same as web master grid and Word export)
+  const batches = await Batch.find().populate("branch");
+  const dateRows = await DateRow.find().sort({ date: 1 });
+  const extraDates = dateRows.map((row) => row.date);
 
-  const html = masterTemplate({
-    academyName: "Guru Aanklan Academy",
-    batches,
-    slots
-  });
+  const html = masterTemplate({ batches, slots, extraDates });
 
-  return renderPdfBuffer(html);
+  // Render as A3 landscape to fit all batch columns
+  return renderPdfBuffer(html, true);
 };
 
 export { exportAllPdfs, exportBatchPdf, exportMasterPdf, exportTeacherPdf };

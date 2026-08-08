@@ -229,7 +229,7 @@ const TestTrackingPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-violet-50/30 shadow-sm">
+      <div className="overflow-visible rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-violet-50/30 shadow-sm">
         <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-100 px-6 py-5">
           <div>
             <h2 className="text-xl font-bold text-slate-900">Test Tracking</h2>

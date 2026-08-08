@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import MasterPage from "./pages/MasterPage";
 import TeacherPage from "./pages/TeacherPage";
+import TeacherManagementPage from "./pages/TeacherManagementPage";
 import BatchPage from "./pages/BatchPage";
 import ManagePage from "./pages/ManagePage";
 import HistoryPage from "./pages/HistoryPage";
@@ -11,6 +12,7 @@ import ToastViewport from "./components/ToastViewport";
 const routes = [
   { path: "/master", label: "Timetable", description: "Master timetable and slot editor", wide: true },
   { path: "/teacher", label: "Teachers", description: "Teacher-wise schedule and exports" },
+  { path: "/teacher-setup", label: "Teacher Setup", description: "Add, edit, and remove teachers with active allotment totals" },
   { path: "/batch", label: "Batches", description: "Batch-wise schedule and exports" },
   { path: "/tracking", label: "Chapter Progress", description: "Track completion and progress" },
   { path: "/tests", label: "Tests", description: "Test tracking and scheduling" },
@@ -21,6 +23,7 @@ const routes = [
 const routeViews = {
   "/master": MasterPage,
   "/teacher": TeacherPage,
+  "/teacher-setup": TeacherManagementPage,
   "/batch": BatchPage,
   "/tracking": ChapterTrackingPage,
   "/tests": TestTrackingPage,

@@ -317,7 +317,7 @@ const ChapterTrackingPage = () => {
 
   return (
     <div className="space-y-6">
-      <div className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm">
+      <div className="overflow-visible rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-slate-50 shadow-sm">
         <div className="border-b border-slate-100 px-6 py-5">
           <h2 className="text-xl font-bold text-slate-900">Chapter Progress</h2>
           <p className="mt-1 text-sm text-slate-500">
