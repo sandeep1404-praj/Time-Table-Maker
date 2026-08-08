@@ -1,11 +1,12 @@
 import express from "express";
 import Teacher from "../models/Teacher.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const filter = {};
   const search = req.query.search?.trim();
   if (search) {
@@ -13,9 +14,9 @@ router.get("/", async (req, res) => {
   }
   const teachers = await Teacher.find(filter).sort({ name: 1 });
   res.json(teachers);
-});
+}));
 
-router.post("/", async (req, res) => {
+router.post("/", asyncHandler(async (req, res) => {
   const { name, code, subject, chapters, color, allowScheduleOverlap } = req.body;
   if (!name?.trim()) {
     return res.status(400).json({ error: "Teacher name is required" });
@@ -67,9 +68,9 @@ router.post("/", async (req, res) => {
     allowScheduleOverlap: Boolean(allowScheduleOverlap)
   });
   res.status(201).json(teacher);
-});
+}));
 
-router.patch("/:id", async (req, res) => {
+router.patch("/:id", asyncHandler(async (req, res) => {
   const { name, subject, allowScheduleOverlap } = req.body;
   const teacher = await Teacher.findById(req.params.id);
   if (!teacher) {
@@ -104,9 +105,9 @@ router.patch("/:id", async (req, res) => {
 
   await teacher.save();
   res.json(teacher);
-});
+}));
 
-router.patch("/:id/chapters/:chapterId/branch-completion", async (req, res) => {
+router.patch("/:id/chapters/:chapterId/branch-completion", asyncHandler(async (req, res) => {
   const { branchId, batchId, isCompleted } = req.body;
   if (!branchId) {
     return res.status(400).json({ error: "Branch is required" });
@@ -163,9 +164,9 @@ router.patch("/:id/chapters/:chapterId/branch-completion", async (req, res) => {
 
   await teacher.save();
   res.json(teacher);
-});
+}));
 
-router.patch("/:id/chapters/:chapterId", async (req, res) => {
+router.patch("/:id/chapters/:chapterId", asyncHandler(async (req, res) => {
   const { chapterNumber, title, plannedHours } = req.body;
   const teacher = await Teacher.findById(req.params.id);
   if (!teacher) {
@@ -192,9 +193,9 @@ router.patch("/:id/chapters/:chapterId", async (req, res) => {
 
   await teacher.save();
   res.json(teacher);
-});
+}));
 
-router.delete("/:id/chapters/:chapterId", async (req, res) => {
+router.delete("/:id/chapters/:chapterId", asyncHandler(async (req, res) => {
   const teacher = await Teacher.findById(req.params.id);
   if (!teacher) {
     return res.status(404).json({ error: "Teacher not found" });
@@ -208,17 +209,17 @@ router.delete("/:id/chapters/:chapterId", async (req, res) => {
   chapter.deleteOne();
   await teacher.save();
   res.json(teacher);
-});
+}));
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   const teacher = await Teacher.findByIdAndDelete(req.params.id);
   if (!teacher) {
     return res.status(404).json({ error: "Teacher not found" });
   }
   res.json({ status: "deleted" });
-});
+}));
 
-router.patch("/:id/chapters", async (req, res) => {
+router.patch("/:id/chapters", asyncHandler(async (req, res) => {
   const { chapterNumber, title, plannedHours } = req.body;
   if (!chapterNumber) {
     return res.status(400).json({ error: "Chapter number is required" });
@@ -241,6 +242,6 @@ router.patch("/:id/chapters", async (req, res) => {
   }
 
   res.json(teacher);
-});
+}));
 
 export default router;

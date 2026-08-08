@@ -4,7 +4,7 @@ Full-stack timetable management for a coaching academy.
 
 ## Tech
 - Frontend: React 18, Vite, Tailwind, AG Grid Community, Zustand, TanStack Query, Axios, date-fns
-- Backend: Node.js, Express, MongoDB, Mongoose, Puppeteer, Archiver, Zod, Winston, cors, dotenv
+- Backend: Node.js, Express, MongoDB, Mongoose, JWT auth, Puppeteer, Archiver, Zod, Winston, cors, dotenv
 
 ## Setup
 
@@ -21,8 +21,13 @@ Full-stack timetable management for a coaching academy.
    ```
 4) Run server:
    ```bash
-   node server.js
+   npm run dev
    ```
+
+### Authentication
+- Sign up does not require email confirmation.
+- The first user who signs up becomes the initial admin.
+- Admin users can create more users and review activity logs from the admin page.
 
 ### Frontend
 1) Install deps:
@@ -38,3 +43,4 @@ Full-stack timetable management for a coaching academy.
 ## Notes
 - PDF export uses Puppeteer and may require extra system dependencies on some machines.
 - Adjust `VITE_API_URL` in `client/.env` if your server runs on a different port.
+- Set `JWT_SECRET` in `server/.env` for production.

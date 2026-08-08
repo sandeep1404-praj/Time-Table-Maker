@@ -2,44 +2,50 @@ import express from "express";
 import Archive from "../models/Archive.js";
 import DateRow from "../models/DateRow.js";
 import TimeSlot from "../models/TimeSlot.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
-router.get("/", async (req, res) => {
-  const archives = await Archive.find().sort({ createdAt: -1 });
-  res.json(archives);
-});
+router.get(
+  "/",
+  asyncHandler(async (req, res) => {
+    const archives = await Archive.find().sort({ createdAt: -1 });
+    res.json(archives);
+  })
+);
 
-router.post("/", async (req, res) => {
-  const activeDates = await DateRow.find({ isArchived: { $ne: true } }).sort({ date: 1 });
-  if (activeDates.length === 0) {
-    return res.status(400).json({ error: "No active dates to archive." });
-  }
+router.post(
+  "/",
+  asyncHandler(async (req, res) => {
+    const activeDates = await DateRow.find({ isArchived: { $ne: true } }).sort({ date: 1 });
+    if (activeDates.length === 0) {
+      return res.status(400).json({ error: "No active dates to archive." });
+    }
 
-  const startDate = activeDates[0].date;
-  const endDate = activeDates[activeDates.length - 1].date;
-  
-  const options = { month: "short", day: "numeric" };
-  const name = `${startDate.toLocaleDateString("en-US", options)} - ${endDate.toLocaleDateString("en-US", options)}`;
+    const startDate = activeDates[0].date;
+    const endDate = activeDates[activeDates.length - 1].date;
 
-  const archive = await Archive.create({ name, startDate, endDate });
+    const options = { month: "short", day: "numeric" };
+    const name = `${startDate.toLocaleDateString("en-US", options)} - ${endDate.toLocaleDateString("en-US", options)}`;
 
-  await DateRow.updateMany({ isArchived: { $ne: true } }, { isArchived: true, archiveId: archive._id });
-  await TimeSlot.updateMany({ isArchived: { $ne: true } }, { isArchived: true, archiveId: archive._id });
+    const archive = await Archive.create({ name, startDate, endDate });
 
-  res.status(201).json(archive);
-});
+    await DateRow.updateMany({ isArchived: { $ne: true } }, { isArchived: true, archiveId: archive._id });
+    await TimeSlot.updateMany({ isArchived: { $ne: true } }, { isArchived: true, archiveId: archive._id });
 
-router.delete("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
+    res.status(201).json(archive);
+  })
+);
+
+router.delete(
+  "/:id",
+  asyncHandler(async (req, res) => {
+    const id = String(req.params.id).trim();
     await Archive.findByIdAndDelete(id);
     await DateRow.deleteMany({ archiveId: id });
     await TimeSlot.deleteMany({ archiveId: id });
     res.json({ message: "Archive deleted" });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete archive" });
-  }
-});
+  })
+);
 
 export default router;

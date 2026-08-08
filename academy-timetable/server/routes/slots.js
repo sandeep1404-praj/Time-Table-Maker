@@ -12,6 +12,7 @@ import {
   parseTimeToMinutes,
   sortSlotsByDateAndTime
 } from "../utils/time.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
 
 const router = express.Router();
 
@@ -71,10 +72,10 @@ const syncSlotStatuses = async (slots) => {
   }
 };
 
-router.get("/", async (req, res) => {
+router.get("/", asyncHandler(async (req, res) => {
   const query = {};
   if (req.query.archiveId) {
-    query.archiveId = req.query.archiveId;
+    query.archiveId = String(req.query.archiveId).trim();
   } else {
     query.isArchived = { $ne: true };
   }
@@ -89,7 +90,7 @@ router.get("/", async (req, res) => {
   }
 
   res.json(slots);
-});
+}));
 
 router.post(
   "/",
@@ -105,7 +106,7 @@ router.post(
       .isIn(["scheduled", "ongoing", "completed", "canceled"])
   ],
   requireTeacherUnlessTest,
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -138,7 +139,7 @@ router.post(
     const slot = await TimeSlot.create(createPayload);
     const loggedConflicts = await checkAndLogConflicts(slot);
     res.status(201).json({ slot, conflicts: loggedConflicts });
-  }
+  })
 );
 
 router.put(
@@ -153,7 +154,7 @@ router.put(
       .optional()
       .isIn(["scheduled", "ongoing", "completed", "canceled"])
   ],
-  async (req, res) => {
+  asyncHandler(async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({ errors: errors.array() });
@@ -228,21 +229,32 @@ router.put(
 
     const loggedConflicts = await checkAndLogConflicts(slot);
     res.json({ slot, conflicts: loggedConflicts });
-  }
+  })
 );
 
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", asyncHandler(async (req, res) => {
   const slot = await TimeSlot.findByIdAndDelete(req.params.id);
   if (!slot) {
     return res.status(404).json({ error: "Slot not found" });
   }
   res.json({ status: "deleted" });
-});
+}));
 
-router.post("/check-conflict", async (req, res) => {
-  const slot = req.body;
-  const conflicts = await findConflicts(slot);
-  res.json({ conflicts });
-});
+// Check-conflict: validate required fields before querying.
+router.post("/check-conflict",
+  [
+    body("date").optional().isISO8601(),
+    body("startTime").optional().custom((value) => parseTimeToMinutes(value) !== null),
+    body("endTime").optional().custom((value) => parseTimeToMinutes(value) !== null)
+  ],
+  asyncHandler(async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({ errors: errors.array() });
+    }
+    const conflicts = await findConflicts(req.body);
+    res.json({ conflicts });
+  })
+);
 
 export default router;
