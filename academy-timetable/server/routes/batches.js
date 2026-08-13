@@ -1,6 +1,7 @@
 import express from "express";
 import Batch from "../models/Batch.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { sortBatchesByOrder } from "../utils/batchOrder.js";
 
 const router = express.Router();
 
@@ -9,7 +10,7 @@ const BATCH_NAME_MAX = 100;
 router.get(
   "/",
   asyncHandler(async (req, res) => {
-    const batches = await Batch.find().populate("branch");
+    const batches = sortBatchesByOrder(await Batch.find().populate("branch"));
     res.json(batches);
   })
 );

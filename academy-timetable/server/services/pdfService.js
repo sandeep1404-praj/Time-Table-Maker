@@ -8,6 +8,7 @@ import { teacherTemplate } from "../templates/teacherTemplate.js";
 import { batchTemplate } from "../templates/batchTemplate.js";
 import { masterTemplate } from "../templates/masterTemplate.js";
 import { sortSlotsByDateAndTime } from "../utils/time.js";
+import { sortBatchesByOrder } from "../utils/batchOrder.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 
@@ -80,7 +81,7 @@ const exportAllPdfs = async (res) => {
     }
   }
 
-  const batches = await Batch.find().populate("branch");
+  const batches = sortBatchesByOrder(await Batch.find().populate("branch"));
   for (const batch of batches) {
     const buffer = await exportBatchPdf(batch._id);
     if (buffer) {
@@ -97,8 +98,8 @@ const exportMasterPdf = async () => {
       .populate("teacher")
       .populate({ path: "batch", populate: "branch" })
   );
-  // DB insertion order (same as web master grid and Word export)
-  const batches = await Batch.find().populate("branch");
+  // Insertion order sorted to canonical column order (same as web master grid and Word export)
+  const batches = sortBatchesByOrder(await Batch.find().populate("branch"));
   const dateRows = await DateRow.find().sort({ date: 1 });
   const extraDates = dateRows.map((row) => row.date);
 

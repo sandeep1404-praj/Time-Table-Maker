@@ -19,6 +19,7 @@ import Teacher from "../models/Teacher.js";
 import Batch from "../models/Batch.js";
 import DateRow from "../models/DateRow.js";
 import { formatTimeForDisplay, sortSlotsByDateAndTime } from "../utils/time.js";
+import { sortBatchesByOrder } from "../utils/batchOrder.js";
 
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 const getDayFull = (date) =>
@@ -394,7 +395,7 @@ const exportMasterDocx = async () => {
       .populate("teacher")
       .populate({ path: "batch", populate: "branch" })
   );
-  const batches = await Batch.find().populate("branch");
+  const batches = sortBatchesByOrder(await Batch.find().populate("branch"));
   const dateRows = await DateRow.find().sort({ date: 1 });
   const extraDates = dateRows.map((row) => row.date);
 
