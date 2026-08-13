@@ -1,5 +1,6 @@
 import archiver from "archiver";
-import puppeteer from "puppeteer";
+import puppeteer from "puppeteer-core";
+import chromium from "@sparticuz/chromium";
 import TimeSlot from "../models/TimeSlot.js";
 import Teacher from "../models/Teacher.js";
 import Batch from "../models/Batch.js";
@@ -13,9 +14,12 @@ import { sortBatchesByOrder } from "../utils/batchOrder.js";
 const formatDate = (date) => new Date(date).toISOString().slice(0, 10);
 
 const renderPdfBuffer = async (html, landscape = false) => {
+  const executablePath = await chromium.executablePath();
   const browser = await puppeteer.launch({
-    headless: true,
-    args: ["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage"]
+    args: chromium.args,
+    defaultViewport: chromium.defaultViewport,
+    executablePath,
+    headless: chromium.headless,
   });
   const page = await browser.newPage();
   page.setDefaultNavigationTimeout(60000);
